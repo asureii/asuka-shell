@@ -546,211 +546,7 @@ Item {
                 }
 
 
-                // EvaFile / EvaTerm Actions Deck
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 4
-
-                    // Launch EvaFile
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 26
-                        color: efLaunchMouse.containsMouse ? root.primary : "#ffffff"
-                        border.width: 1
-                        border.color: root.secondary
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: 4
-                            Text { text: "󰝰"; color: efLaunchMouse.containsMouse ? "#ffffff" : root.secondary; font.pixelSize: 9 }
-                            Text { text: "EVAFILE"; color: efLaunchMouse.containsMouse ? "#ffffff" : root.secondary; font.family: root.hudFont; font.pixelSize: 8; font.bold: true }
-                        }
-
-                        MouseArea {
-                            id: efLaunchMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.launchEvaFile("~/Downloads")
-                        }
-                    }
-
-                    // Launch EvaTerm
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 26
-                        color: etLaunchMouse.containsMouse ? root.primary : "#ffffff"
-                        border.width: 1
-                        border.color: root.secondary
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: 4
-                            Text { text: "󰆍"; color: etLaunchMouse.containsMouse ? "#ffffff" : root.secondary; font.pixelSize: 9 }
-                            Text { text: "EVATERM"; color: etLaunchMouse.containsMouse ? "#ffffff" : root.secondary; font.family: root.hudFont; font.pixelSize: 8; font.bold: true }
-                        }
-
-                        MouseArea {
-                            id: etLaunchMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.launchEvaTerm()
-                        }
-                    }
-
-                    // Reload Shell
-                    Rectangle {
-                        width: 32
-                        height: 26
-                        color: reloadMouse.containsMouse ? root.primary : "#ffffff"
-                        border.width: 1
-                        border.color: root.primary
-
-                        Text { anchors.centerIn: parent; text: "󰑓"; color: reloadMouse.containsMouse ? "#ffffff" : root.primary; font.pixelSize: 11 }
-
-                        MouseArea {
-                            id: reloadMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.restartQuickshell()
-                        }
-                    }
-                }
-
-                // EvaFile Quick Places Jumps
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 4
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 20
-                        color: efDownMouse.containsMouse ? root.primary : "#ffffff"
-                        border.width: 1
-                        border.color: root.itemBorder
-                        Text { anchors.centerIn: parent; text: "󰝰 Downloads"; color: efDownMouse.containsMouse ? "#ffffff" : root.secondary; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                        MouseArea { id: efDownMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.launchEvaFile("~/Downloads") }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 20
-                        color: efPicMouse.containsMouse ? root.primary : "#ffffff"
-                        border.width: 1
-                        border.color: root.itemBorder
-                        Text { anchors.centerIn: parent; text: "󰝰 Pictures"; color: efPicMouse.containsMouse ? "#ffffff" : root.secondary; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                        MouseArea { id: efPicMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.launchEvaFile("~/Pictures") }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 20
-                        color: efDocMouse.containsMouse ? root.primary : "#ffffff"
-                        border.width: 1
-                        border.color: root.itemBorder
-                        Text { anchors.centerIn: parent; text: "󰝰 Documents"; color: efDocMouse.containsMouse ? "#ffffff" : root.secondary; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                        MouseArea { id: efDocMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.launchEvaFile("~/Documents") }
-                    }
-
-                    Rectangle {
-                        width: 48
-                        height: 20
-                        color: efHomeMouse.containsMouse ? root.primary : "#ffffff"
-                        border.width: 1
-                        border.color: root.itemBorder
-                        Text { anchors.centerIn: parent; text: "󰝰 ~/"; color: efHomeMouse.containsMouse ? "#ffffff" : root.secondary; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                        MouseArea { id: efHomeMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.launchEvaFile("~/") }
-                    }
-                }
-
-                // EvaSort Directory Auto-Organizer Deck
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 58
-                    color: root.itemBg
-                    border.width: 1
-                    border.color: root.itemBorder
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 6
-                        spacing: 4
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Text { text: "▶ EVASORT INTELLIGENT DIRECTORY ORGANIZER"; color: root.fg; font.family: root.hudFont; font.pixelSize: 8; font.bold: true }
-                            Item { Layout.fillWidth: true }
-                            Text {
-                                text: root.evaSuiteStatus.sort.running ? "DAEMON ACTIVE" : "DAEMON STANDBY"
-                                color: root.evaSuiteStatus.sort.running ? root.secondary : root.fgDim
-                                font.family: root.hudFont
-                                font.pixelSize: 7
-                                font.bold: true
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 4
-
-                            // Run EvaSort once
-                            Rectangle {
-                                Layout.fillWidth: true
-                                height: 22
-                                color: sortRunMouse.containsMouse ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.35) : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.15)
-                                border.width: 1
-                                border.color: root.secondary
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "󰒋 ORGANIZE ~/DOWNLOADS NOW"
-                                    color: root.secondary
-                                    font.family: root.hudFont
-                                    font.pixelSize: 7
-                                    font.bold: true
-                                }
-
-                                MouseArea {
-                                    id: sortRunMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.runEvaSort("~/Downloads")
-                                }
-                            }
-
-                            // Toggle Watcher Daemon
-                            Rectangle {
-                                Layout.fillWidth: true
-                                height: 22
-                                color: sortDaemonMouse.containsMouse ? root.primary : (root.evaSuiteStatus.sort.running ? root.primary : "#ffffff")
-                                border.width: 1
-                                border.color: root.evaSuiteStatus.sort.running ? root.secondary : root.itemBorder
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: root.evaSuiteStatus.sort.running ? "󰈈 STOP WATCHER" : "󰈈 START WATCHER DAEMON"
-                                    color: (sortDaemonMouse.containsMouse || root.evaSuiteStatus.sort.running) ? "#ffffff" : root.fgMuted
-                                    font.family: root.hudFont
-                                    font.pixelSize: 7
-                                    font.bold: true
-                                }
-
-                                MouseArea {
-                                    id: sortDaemonMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.toggleEvaSortDaemon()
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Tactical Routing Pipeline Matrix
+                // Unified Directory Routing Pipeline Deck
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -761,16 +557,16 @@ Item {
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: 6
-                        spacing: 5
+                        anchors.margins: 8
+                        spacing: 6
 
-                        // Header Bar with Meta Status
+                        // Header Bar: Pipeline Title + Meta Info + Action Controls
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 6
 
                             Text {
-                                text: "▶ TACTICAL ROUTING PIPELINE (" + root.sortCategories.length + " CHANNELS)"
+                                text: "▶ DIRECTORY ROUTING PIPELINE"
                                 color: root.primary
                                 font.family: root.hudFont
                                 font.pixelSize: 8
@@ -778,15 +574,13 @@ Item {
                                 font.letterSpacing: 0.8
                             }
 
-                            Item { Layout.fillWidth: true }
-
-                            // Meta Tag: Source
+                            // Meta pill: ~/Downloads
                             Rectangle {
-                                height: 16
+                                height: 18
                                 implicitWidth: srcMetaRow.implicitWidth + 8
-                                color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.08)
+                                color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.06)
                                 border.width: 1
-                                border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.25)
+                                border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.22)
 
                                 RowLayout {
                                     id: srcMetaRow
@@ -797,25 +591,65 @@ Item {
                                 }
                             }
 
-                            // Meta Tag: Strategy
+                            Item { Layout.fillWidth: true }
+
+                            // Watcher Status Badge
                             Rectangle {
-                                height: 16
-                                implicitWidth: stratMetaRow.implicitWidth + 8
-                                color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.08)
+                                height: 18
+                                implicitWidth: sortDaemonRow.implicitWidth + 8
+                                color: root.evaSuiteStatus.sort.running ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.08) : "#ffffff"
                                 border.width: 1
-                                border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.25)
+                                border.color: root.evaSuiteStatus.sort.running ? root.secondary : root.itemBorder
 
                                 RowLayout {
-                                    id: stratMetaRow
+                                    id: sortDaemonRow
                                     anchors.centerIn: parent
                                     spacing: 3
-                                    Text { text: "POLICY:"; color: root.fgDim; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                                    Text { text: root.sortStrategy.toUpperCase(); color: root.secondary; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
+                                    Rectangle { width: 4; height: 4; radius: 2; color: root.evaSuiteStatus.sort.running ? root.primary : root.fgDim }
+                                    Text {
+                                        text: root.evaSuiteStatus.sort.running ? "WATCHER ON" : "STANDBY"
+                                        color: root.evaSuiteStatus.sort.running ? root.secondary : root.fgDim
+                                        font.family: root.hudFont
+                                        font.pixelSize: 7
+                                        font.bold: true
+                                    }
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.toggleEvaSortDaemon()
+                                }
+                            }
+
+                            // Clean Downloads Now Action Button
+                            Rectangle {
+                                height: 18
+                                implicitWidth: sortRunRow.implicitWidth + 8
+                                color: sortRunMouse.containsMouse ? root.primary : "#ffffff"
+                                border.width: 1
+                                border.color: root.secondary
+
+                                RowLayout {
+                                    id: sortRunRow
+                                    anchors.centerIn: parent
+                                    spacing: 3
+                                    Text { text: "󰒋"; color: sortRunMouse.containsMouse ? "#ffffff" : root.secondary; font.pixelSize: 8 }
+                                    Text { text: "CLEAN DOWNLOADS"; color: sortRunMouse.containsMouse ? "#ffffff" : root.secondary; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
+                                }
+
+                                MouseArea {
+                                    id: sortRunMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.runEvaSort("~/Downloads")
                                 }
                             }
                         }
 
-                        // Scrollable List of Category Cards
+                        // Scrollable List of Clean Category Cards
                         Flickable {
                             id: catFlickable
                             Layout.fillWidth: true
@@ -836,31 +670,27 @@ Item {
                                         id: catCard
                                         required property var modelData
                                         width: catCol.width
-                                        implicitHeight: cardInner.implicitHeight + 8
-                                        color: catMouse.containsMouse ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.06) : "#ffffff"
+                                        height: 36
+                                        color: catMouse.containsMouse ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.05) : "#ffffff"
                                         border.width: 1
-                                        border.color: catMouse.containsMouse ? root.primary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.22)
+                                        border.color: catMouse.containsMouse ? root.primary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.18)
 
                                         Behavior on color { ColorAnimation { duration: 100 } }
                                         Behavior on border.color { ColorAnimation { duration: 100 } }
 
-                                        ColumnLayout {
-                                            id: cardInner
-                                            anchors.left: parent.left
-                                            anchors.right: parent.right
-                                            anchors.top: parent.top
-                                            anchors.margins: 4
-                                            spacing: 3
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 8
+                                            anchors.rightMargin: 8
+                                            spacing: 6
 
-                                            // Top Row: Category Icon + Name + Arrow + Destination Chip
+                                            // Category Icon + Name
                                             RowLayout {
-                                                Layout.fillWidth: true
                                                 spacing: 5
-
                                                 Text {
                                                     text: catCard.modelData.icon || "󰒋"
                                                     color: root.primary
-                                                    font.pixelSize: 9
+                                                    font.pixelSize: 10
                                                 }
 
                                                 Text {
@@ -870,87 +700,61 @@ Item {
                                                     font.pixelSize: 8
                                                     font.bold: true
                                                 }
+                                            }
 
-                                                Text {
-                                                    text: "▶"
-                                                    color: root.fgDim
-                                                    font.pixelSize: 6
-                                                }
+                                            Text {
+                                                text: "▶"
+                                                color: root.fgDim
+                                                font.pixelSize: 6
+                                            }
 
-                                                // Clickable Destination Chip
-                                                Rectangle {
-                                                    height: 16
-                                                    implicitWidth: destRow.implicitWidth + 8
-                                                    color: destMouse.containsMouse ? root.primary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.08)
-                                                    border.width: 0.5
-                                                    border.color: root.primary
+                                            // Clickable Destination Chip
+                                            Rectangle {
+                                                height: 18
+                                                implicitWidth: destRow.implicitWidth + 8
+                                                color: destMouse.containsMouse ? root.primary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.05)
+                                                border.width: 0.5
+                                                border.color: destMouse.containsMouse ? root.primary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.3)
 
-                                                    RowLayout {
-                                                        id: destRow
-                                                        anchors.centerIn: parent
-                                                        spacing: 3
-                                                        Text {
-                                                            text: "󰝰"
-                                                            color: destMouse.containsMouse ? "#ffffff" : root.secondary
-                                                            font.pixelSize: 7
-                                                        }
-                                                        Text {
-                                                            text: catCard.modelData.dest || ""
-                                                            color: destMouse.containsMouse ? "#ffffff" : root.secondary
-                                                            font.family: root.hudFont
-                                                            font.pixelSize: 7
-                                                            font.bold: true
-                                                        }
+                                                RowLayout {
+                                                    id: destRow
+                                                    anchors.centerIn: parent
+                                                    spacing: 3
+                                                    Text {
+                                                        text: "󰝰"
+                                                        color: destMouse.containsMouse ? "#ffffff" : root.secondary
+                                                        font.pixelSize: 7
                                                     }
-
-                                                    MouseArea {
-                                                        id: destMouse
-                                                        anchors.fill: parent
-                                                        hoverEnabled: true
-                                                        cursorShape: Qt.PointingHandCursor
-                                                        onClicked: root.launchEvaFile(catCard.modelData.dest_full || catCard.modelData.dest)
+                                                    Text {
+                                                        text: catCard.modelData.dest || ""
+                                                        color: destMouse.containsMouse ? "#ffffff" : root.secondary
+                                                        font.family: root.hudFont
+                                                        font.pixelSize: 7
+                                                        font.bold: true
                                                     }
                                                 }
 
-                                                Item { Layout.fillWidth: true }
-
-                                                // Format Count Tag
-                                                Text {
-                                                    text: (catCard.modelData.exts ? catCard.modelData.exts.length : 0) + " FORMATS"
-                                                    color: root.fgDim
-                                                    font.family: root.hudFont
-                                                    font.pixelSize: 6
-                                                    font.bold: true
+                                                MouseArea {
+                                                    id: destMouse
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: root.launchEvaFile(catCard.modelData.dest_full || catCard.modelData.dest)
                                                 }
                                             }
 
-                                            // Bottom Row: Extension Pills
-                                            Flow {
-                                                Layout.fillWidth: true
-                                                spacing: 2
+                                            Item { Layout.fillWidth: true }
 
-                                                Repeater {
-                                                    model: catCard.modelData.exts || []
-
-                                                    Rectangle {
-                                                        required property string modelData
-                                                        height: 13
-                                                        implicitWidth: extText.implicitWidth + 6
-                                                        color: Qt.rgba(0, 0, 0, 0.03)
-                                                        border.width: 0.5
-                                                        border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.22)
-
-                                                        Text {
-                                                            id: extText
-                                                            anchors.centerIn: parent
-                                                            text: modelData.toUpperCase()
-                                                            color: root.fgMuted
-                                                            font.family: root.hudFont
-                                                            font.pixelSize: 6
-                                                            font.bold: true
-                                                        }
-                                                    }
+                                            // Clean Format Summary Text (replaces 12-19 tiny badges per card!)
+                                            Text {
+                                                text: {
+                                                    var exts = catCard.modelData.exts || [];
+                                                    var sample = exts.slice(0, 3).join(", ");
+                                                    return (catCard.modelData.count || exts.length) + " formats (" + sample + (exts.length > 3 ? ", …" : "") + ")";
                                                 }
+                                                color: root.fgDim
+                                                font.family: root.hudFont
+                                                font.pixelSize: 7
                                             }
                                         }
 
@@ -1021,44 +825,6 @@ Item {
                         font.letterSpacing: 1.2
                         elide: Text.ElideRight
                         Layout.fillWidth: true
-                    }
-
-                    // Open Downloads in EvaFile
-                    Rectangle {
-                        width: 22
-                        height: 18
-                        color: efLinkMouse.containsMouse ? root.primary : "#ffffff"
-                        border.width: 1
-                        border.color: root.secondary
-
-                        Text { anchors.centerIn: parent; text: "󰝰"; color: efLinkMouse.containsMouse ? "#ffffff" : root.secondary; font.pixelSize: 9 }
-
-                        MouseArea {
-                            id: efLinkMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.launchEvaFile("~/Downloads")
-                        }
-                    }
-
-                    // Open Downloads in EvaTerm
-                    Rectangle {
-                        width: 22
-                        height: 18
-                        color: etLinkMouse.containsMouse ? root.primary : "#ffffff"
-                        border.width: 1
-                        border.color: root.secondary
-
-                        Text { anchors.centerIn: parent; text: "󰆍"; color: etLinkMouse.containsMouse ? "#ffffff" : root.secondary; font.pixelSize: 9 }
-
-                        MouseArea {
-                            id: etLinkMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.launchEvaTerm("~/Downloads")
-                        }
                     }
 
                     Rectangle {
@@ -1248,7 +1014,7 @@ Item {
 
                                     Text {
                                         Layout.alignment: Qt.AlignHCenter
-                                        text: "󰇚 NERV DOWNLINK PROTOCOL STANDBY"
+                                        text: "󰇚 NERV DOWNLINK // STANDBY"
                                         color: root.primary
                                         font.family: root.hudFont
                                         font.pixelSize: 9
@@ -1258,147 +1024,63 @@ Item {
 
                                     Text {
                                         Layout.alignment: Qt.AlignHCenter
-                                        text: "NO MISSIONS ACTIVE // LISTENING ON JSON-RPC INTERFACE"
+                                        text: "ARIA2C RPC :6800 // LOCALHOST"
                                         color: root.fgDim
                                         font.family: root.hudFont
                                         font.pixelSize: 7
                                     }
                                 }
 
-                                // Subsystem Telemetry Card
-                                Rectangle {
+                                // Rapid Action Presets
+                                RowLayout {
                                     Layout.fillWidth: true
-                                    implicitHeight: teleCol.implicitHeight + 10
-                                    color: "#ffffff"
-                                    border.width: 1
-                                    border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.22)
+                                    spacing: 6
 
-                                    ColumnLayout {
-                                        id: teleCol
-                                        anchors.fill: parent
-                                        anchors.margins: 6
-                                        spacing: 3
-
-                                        RowLayout {
-                                            spacing: 4
-                                            Text { text: "▶ DAEMON:"; color: root.fgDim; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                                            Text { text: "ARIA2C JSON-RPC (PORT 6800)"; color: root.fg; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                                            Item { Layout.fillWidth: true }
-                                            Rectangle {
-                                                width: 5
-                                                height: 5
-                                                radius: 2.5
-                                                color: root.evalinkOnline ? root.primary : root.fgDim
-                                            }
-                                        }
-
-                                        RowLayout {
-                                            spacing: 4
-                                            Text { text: "▶ STATUS:"; color: root.fgDim; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                                            Text {
-                                                text: root.evalinkOnline ? "LISTENING & SYNCHRONIZED" : "STANDBY // DISCONNECTED"
-                                                color: root.evalinkOnline ? root.secondary : root.primary
-                                                font.family: root.hudFont
-                                                font.pixelSize: 7
-                                                font.bold: true
-                                            }
-                                        }
-
-                                        RowLayout {
-                                            spacing: 4
-                                            Text { text: "▶ SPOOL REPOSITORY:"; color: root.fgDim; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                                            Text { text: "~/Downloads"; color: root.secondary; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                                        }
-                                    }
-                                }
-
-                                // Quick Action Presets Deck
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 4
-
-                                    Text {
-                                        text: "RAPID PROTOCOL INGESTION:"
-                                        color: root.fgDim
-                                        font.family: root.hudFont
-                                        font.pixelSize: 7
-                                        font.bold: true
-                                    }
-
-                                    RowLayout {
+                                    // Paste Clipboard URL
+                                    Rectangle {
                                         Layout.fillWidth: true
-                                        spacing: 4
+                                        height: 24
+                                        color: pasteMouse.containsMouse ? root.primary : "#ffffff"
+                                        border.width: 1
+                                        border.color: root.secondary
 
-                                        // Paste Clipboard URL
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            height: 24
-                                            color: pasteMouse.containsMouse ? root.primary : "#ffffff"
-                                            border.width: 1
-                                            border.color: root.secondary
-
-                                            RowLayout {
-                                                anchors.centerIn: parent
-                                                spacing: 4
-                                                Text { text: "󰅌"; color: pasteMouse.containsMouse ? "#ffffff" : root.secondary; font.pixelSize: 8 }
-                                                Text { text: "PASTE URL"; color: pasteMouse.containsMouse ? "#ffffff" : root.secondary; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                                            }
-
-                                            MouseArea {
-                                                id: pasteMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: clipPasteProcess.running = true
-                                            }
+                                        RowLayout {
+                                            anchors.centerIn: parent
+                                            spacing: 4
+                                            Text { text: "󰅌"; color: pasteMouse.containsMouse ? "#ffffff" : root.secondary; font.pixelSize: 8 }
+                                            Text { text: "PASTE CLIPBOARD"; color: pasteMouse.containsMouse ? "#ffffff" : root.secondary; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
                                         }
 
-                                        // Open Downloads in EvaFile
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            height: 24
-                                            color: openDlMouse.containsMouse ? root.primary : "#ffffff"
-                                            border.width: 1
-                                            border.color: root.secondary
+                                        MouseArea {
+                                            id: pasteMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: clipPasteProcess.running = true
+                                        }
+                                    }
 
-                                            RowLayout {
-                                                anchors.centerIn: parent
-                                                spacing: 4
-                                                Text { text: "󰝰"; color: openDlMouse.containsMouse ? "#ffffff" : root.secondary; font.pixelSize: 8 }
-                                                Text { text: "DOWNLOADS"; color: openDlMouse.containsMouse ? "#ffffff" : root.secondary; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                                            }
+                                    // Open Downloads in EvaFile
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        height: 24
+                                        color: openDlMouse.containsMouse ? root.primary : "#ffffff"
+                                        border.width: 1
+                                        border.color: root.secondary
 
-                                            MouseArea {
-                                                id: openDlMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: root.launchEvaFile("~/Downloads")
-                                            }
+                                        RowLayout {
+                                            anchors.centerIn: parent
+                                            spacing: 4
+                                            Text { text: "󰝰"; color: openDlMouse.containsMouse ? "#ffffff" : root.secondary; font.pixelSize: 8 }
+                                            Text { text: "OPEN DOWNLOADS"; color: openDlMouse.containsMouse ? "#ffffff" : root.secondary; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
                                         }
 
-                                        // Aria2 Logs in EvaTerm
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            height: 24
-                                            color: logsMouse.containsMouse ? root.primary : "#ffffff"
-                                            border.width: 1
-                                            border.color: root.itemBorder
-
-                                            RowLayout {
-                                                anchors.centerIn: parent
-                                                spacing: 4
-                                                Text { text: "󰆍"; color: logsMouse.containsMouse ? "#ffffff" : root.fgMuted; font.pixelSize: 8 }
-                                                Text { text: "LOGS"; color: logsMouse.containsMouse ? "#ffffff" : root.fgMuted; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                                            }
-
-                                            MouseArea {
-                                                id: logsMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: root.launchEvaTerm("~", "journalctl -u aria2 -n 50 -f || cat ~/.cache/aria2.log")
-                                            }
+                                        MouseArea {
+                                            id: openDlMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: root.launchEvaFile("~/Downloads")
                                         }
                                     }
                                 }
@@ -1579,7 +1261,7 @@ Item {
                             Text {
                                 anchors.fill: parent
                                 visible: !urlInput.text && !urlInput.activeFocus
-                                text: "INPUT DOWNLOAD URL (HTTP / HTTPS / MAGNET / TORRENT) >"
+                                text: "INPUT URL (HTTP / MAGNET / TORRENT) >"
                                 color: root.fgDim
                                 font.family: root.hudFont
                                 font.pixelSize: 8
