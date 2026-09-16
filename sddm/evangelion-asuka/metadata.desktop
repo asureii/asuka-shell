@@ -1,0 +1,9 @@
+[SddmGreeterTheme]
+Name=Evangelion Unit-02 (Asuka)
+Description=NERV MAGI Unit-02 Tactical Login Theme with Moving Fog GLSL Shader
+Author=Antigravity
+Type=sddm-theme
+Version=1.0
+ConfigFile=theme.conf
+MainScript=Main.qml
+QtVersion=6

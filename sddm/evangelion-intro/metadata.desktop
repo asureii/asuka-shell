@@ -1,0 +1,9 @@
+[SddmGreeterTheme]
+Name=Evangelion Intro (Sync Loop)
+Description=Evangelion NERV Harmonic Oscillation Video Theme with Floating Login Panel
+Author=Antigravity
+Type=sddm-theme
+Version=1.0
+ConfigFile=theme.conf
+MainScript=Main.qml
+QtVersion=6

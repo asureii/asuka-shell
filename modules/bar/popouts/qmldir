@@ -1,0 +1,7 @@
+module modules.bar.popouts
+NervLauncher 1.0 NervLauncher.qml
+NervVitalsPopout 1.0 NervVitalsPopout.qml
+NervAudioBrightnessPopout 1.0 NervAudioBrightnessPopout.qml
+NervNetworkPopout 1.0 NervNetworkPopout.qml
+ActiveWorkspacePopout 1.0 ActiveWorkspacePopout.qml
+PopoutBackdrop 1.0 PopoutBackdrop.qml

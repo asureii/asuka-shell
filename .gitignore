@@ -1,0 +1,30 @@
+# Runtime state and user cache
+wallpaper.txt
+downloads/
+*.log
+
+# Compiled helper binaries (build with `make`)
+scripts/get_applications
+scripts/nerv_vitals
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+
+# QML / Qt compilation cache
+*.qmlc
+*.jsc
+
+# Editor and OS artifacts
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Agent session cache
+.agents/

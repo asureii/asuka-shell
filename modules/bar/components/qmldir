@@ -1,0 +1,10 @@
+module modules.bar.components
+BarWorkspaces 1.0 BarWorkspaces.qml
+BarActiveWindow 1.0 BarActiveWindow.qml
+BarClockPod 1.0 BarClockPod.qml
+BarHardwareStats 1.0 BarHardwareStats.qml
+BarAudioVolume 1.0 BarAudioVolume.qml
+BarBattery 1.0 BarBattery.qml
+BarNetwork 1.0 BarNetwork.qml
+BarQuickActions 1.0 BarQuickActions.qml
+WifiGlow 1.0 WifiGlow.qml

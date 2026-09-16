@@ -1,0 +1,18 @@
+singleton NervSettings 1.0 NervSettings.qml
+singleton NervVitals 1.0 NervVitals.qml
+NervHazardLines 1.0 NervHazardLines.qml
+nervhazardlines 1.0 NervHazardLines.qml
+NervHudGrid 1.0 NervHudGrid.qml
+nervhudgrid 1.0 NervHudGrid.qml
+NervScanlines 1.0 NervScanlines.qml
+nervscanlines 1.0 NervScanlines.qml
+NervGrid 1.0 NervGrid.qml
+nervgrid 1.0 NervGrid.qml
+NervIconEffect 1.0 NervIconEffect.qml
+nerviconeffect 1.0 NervIconEffect.qml
+NervFogEffect 1.0 NervFogEffect.qml
+nervfogeffect 1.0 NervFogEffect.qml
+NervOpeningGraphic 1.0 NervOpeningGraphic.qml
+nervopeninggraphic 1.0 NervOpeningGraphic.qml
+NervScanlineBeam 1.0 NervScanlineBeam.qml
+nervscanlinebeam 1.0 NervScanlineBeam.qml
