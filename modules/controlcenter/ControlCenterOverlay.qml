@@ -777,7 +777,9 @@ PanelWindow {
                 z: 28
 
                 ColumnLayout {
-                    anchors.centerIn: parent
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.horizontalCenterOffset: -14
                     spacing: 2
 
                     // EVA Badge
