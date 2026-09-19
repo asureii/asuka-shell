@@ -476,7 +476,7 @@ PanelWindow {
         Item {
             id: tacticalSemiOctagonWheel
             z: 60
-            width: 316
+            width: 280
             height: 440
             anchors.verticalCenter: parent.verticalCenter
             x: root.isWheelCollapsed ? (-width + 48) : 0
@@ -500,18 +500,18 @@ PanelWindow {
                     var ctx = getContext("2d");
                     ctx.clearRect(0, 0, width, height);
                     var cy = height / 2; // 220
-                    var cx = 68;
+                    var cx = 35;
                     var rOuter = 210;
                     var rGrad = 186;
                     var rOrbit = 140;
-                    var rHub = 56;
+                    var rHub = 98;
 
                     var c22 = 0.92388;
                     var s22 = 0.38268;
                     var c67 = 0.38268;
                     var s67 = 0.92388;
 
-                    // Helper to generate 6 vertices of outer semi-octagon anchored to left edge (x=0)
+                    // Helper to generate 6 vertices of semi-octagon anchored to left edge (x=0)
                     function getSemiOctagonPts(r) {
                         return [
                             { x: 0,            y: cy - r * s67 },
@@ -520,20 +520,6 @@ PanelWindow {
                             { x: cx + r * c22, y: cy + r * s22 },
                             { x: cx + r * c67, y: cy + r * s67 },
                             { x: 0,            y: cy + r * s67 }
-                        ];
-                    }
-
-                    // Helper to generate 8 vertices of a full regular octagon centered at (cx, cy)
-                    function getFullOctagonPts(r) {
-                        return [
-                            { x: cx - r * c67, y: cy - r * s67 },
-                            { x: cx + r * c67, y: cy - r * s67 },
-                            { x: cx + r * c22, y: cy - r * s22 },
-                            { x: cx + r * c22, y: cy + r * s22 },
-                            { x: cx + r * c67, y: cy + r * s67 },
-                            { x: cx - r * c67, y: cy + r * s67 },
-                            { x: cx - r * c22, y: cy + r * s22 },
-                            { x: cx - r * c22, y: cy - r * s22 }
                         ];
                     }
 
@@ -587,33 +573,9 @@ PanelWindow {
                     ctx.lineWidth = 1;
                     ctx.stroke();
 
-                    // 5. Inner Hub Regular Octagon Base (Centered at cx, cy)
-                    var hubPts = getFullOctagonPts(rHub);
-                    ctx.beginPath();
-                    ctx.moveTo(hubPts[0].x, hubPts[0].y);
-                    for (var hp = 1; hp < hubPts.length; hp++) {
-                        ctx.lineTo(hubPts[hp].x, hubPts[hp].y);
-                    }
-                    ctx.closePath();
-                    ctx.fillStyle = Qt.rgba(1.0, 1.0, 1.0, 0.96);
-                    ctx.fill();
-                    ctx.strokeStyle = "#cc0000";
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
+                    // 5. Radial Spokes from Inner Half-Octagon Corners to Outer Corners
+                    var hubPts = getSemiOctagonPts(rHub);
 
-                    // Hub Accent Inner Chamfer (Concentric Regular Octagon)
-                    var hubAccentPts = getFullOctagonPts(rHub - 5);
-                    ctx.beginPath();
-                    ctx.moveTo(hubAccentPts[0].x, hubAccentPts[0].y);
-                    for (var ha = 1; ha < hubAccentPts.length; ha++) {
-                        ctx.lineTo(hubAccentPts[ha].x, hubAccentPts[ha].y);
-                    }
-                    ctx.closePath();
-                    ctx.strokeStyle = Qt.rgba(0.8, 0.0, 0.0, 0.22);
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-
-                    // 6. Radial Spokes from Hub Corners to Outer Facets
                     for (var sp = 1; sp <= 4; sp++) {
                         ctx.beginPath();
                         ctx.moveTo(hubPts[sp].x, hubPts[sp].y);
@@ -622,21 +584,8 @@ PanelWindow {
                         ctx.lineWidth = 1;
                         ctx.stroke();
                     }
-                    // Left spoke ties from hub corners to left border
-                    ctx.beginPath();
-                    ctx.moveTo(hubPts[0].x, hubPts[0].y);
-                    ctx.lineTo(hubPts[0].x, outerPts[0].y);
-                    ctx.moveTo(hubPts[5].x, hubPts[5].y);
-                    ctx.lineTo(hubPts[5].x, outerPts[5].y);
-                    ctx.moveTo(hubPts[6].x, hubPts[6].y);
-                    ctx.lineTo(0, hubPts[6].y);
-                    ctx.moveTo(hubPts[7].x, hubPts[7].y);
-                    ctx.lineTo(0, hubPts[7].y);
-                    ctx.strokeStyle = Qt.rgba(0.8, 0.0, 0.0, 0.20);
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
 
-                    // 7. Tactical Graduation Ticks along each outer facet
+                    // 6. Tactical Graduation Ticks along each outer facet
                     for (var f = 0; f < outerPts.length - 1; f++) {
                         var pA = outerPts[f];
                         var pB = outerPts[f + 1];
@@ -662,12 +611,37 @@ PanelWindow {
                         }
                     }
 
-                    // 8. Active Facet Right Edge Bracket (Highlighted Crimson on Vertical Face)
+                    // 7. Active Facet Right Edge Bracket (Highlighted Crimson on Vertical Face)
                     ctx.beginPath();
                     ctx.moveTo(outerPts[2].x, outerPts[2].y);
                     ctx.lineTo(outerPts[3].x, outerPts[3].y);
                     ctx.strokeStyle = "#ff2222";
                     ctx.lineWidth = 3.5;
+                    ctx.stroke();
+
+                    // 8. Inner Hub Half-Octagon Base (Authentic Concentric Semi-Octagon, rHub = 98)
+                    ctx.beginPath();
+                    ctx.moveTo(hubPts[0].x, hubPts[0].y);
+                    for (var hp = 1; hp < hubPts.length; hp++) {
+                        ctx.lineTo(hubPts[hp].x, hubPts[hp].y);
+                    }
+                    ctx.lineTo(0, hubPts[0].y);
+                    ctx.closePath();
+                    ctx.fillStyle = Qt.rgba(1.0, 1.0, 1.0, 0.96);
+                    ctx.fill();
+                    ctx.strokeStyle = "#cc0000";
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+
+                    // Hub Accent Inner Chamfer (Concentric Half-Octagon)
+                    var hubAccentPts = getSemiOctagonPts(rHub - 6);
+                    ctx.beginPath();
+                    ctx.moveTo(hubAccentPts[0].x, hubAccentPts[0].y);
+                    for (var ha = 1; ha < hubAccentPts.length; ha++) {
+                        ctx.lineTo(hubAccentPts[ha].x, hubAccentPts[ha].y);
+                    }
+                    ctx.strokeStyle = Qt.rgba(0.8, 0.0, 0.0, 0.22);
+                    ctx.lineWidth = 1;
                     ctx.stroke();
                 }
             }
@@ -691,7 +665,7 @@ PanelWindow {
                     readonly property real angleRad: angleDeg * Math.PI / 180
                     readonly property bool isSelected: root.currentTabIndex === tabIndex
                     readonly property real orbitRadius: 140
-                    readonly property real cx: 68
+                    readonly property real cx: 35
 
                     width: isSelected ? 44 : 36
                     height: isSelected ? 44 : 36
@@ -791,13 +765,14 @@ PanelWindow {
                 }
             }
 
-            // Fixed Center Hub (Mounted & Centered in Full Octagon)
+            // Fixed Center Hub (Centered in Semi-Octagon Hub)
             Item {
                 id: centerHub
-                x: Math.round(68 - width / 2)
+                anchors.left: parent.left
+                anchors.leftMargin: 0
                 anchors.verticalCenter: parent.verticalCenter
-                width: 96
-                height: 96
+                width: 126
+                height: 84
                 visible: !root.isWheelCollapsed
                 z: 28
 
@@ -896,7 +871,7 @@ PanelWindow {
                 id: focusReticle
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
-                anchors.leftMargin: 264
+                anchors.leftMargin: 230
                 width: 48
                 height: 24
                 z: 30
