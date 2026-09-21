@@ -22,7 +22,7 @@ PanelWindow {
     readonly property string monoFont: "JetBrainsMono Nerd Font, Liberation Sans, monospace"
 
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: (root.isFocused || (cmdInput.activeFocus && (root.revealed || root.pinned))) ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: (root.isFocused && (root.revealed || root.pinned)) ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
     anchors {
@@ -57,7 +57,7 @@ PanelWindow {
     property int historyIndex: -1
 
     implicitWidth: 1280
-    implicitHeight: (root.revealed || root.pinned || root.isAnimating || root.isFocused) ? root.fullHeight : 2
+    implicitHeight: (root.revealed || root.pinned || root.isAnimating) ? root.fullHeight : 2
     color: "transparent"
 
     // ============================================================
@@ -116,6 +116,9 @@ PanelWindow {
                     root.statusText = text.trim() || "Executed";
                 }
                 statusClearTimer.restart();
+                if (!root.pinned && !bottomHoverArea.containsMouse) {
+                    postExecAutoHideTimer.restart();
+                }
             }
         }
     }
@@ -132,12 +135,39 @@ PanelWindow {
 
     Timer {
         id: hideDebounceTimer
-        interval: 200
+        interval: 350
         repeat: false
         onTriggered: {
-            if (!bottomHoverArea.containsMouse && !cmdInput.activeFocus && !root.pinned && !root.isExecuting) {
-                root.revealed = false;
+            if (!bottomHoverArea.containsMouse && !root.pinned) {
+                cmdInput.focus = false;
                 root.isFocused = false;
+                root.revealed = false;
+            }
+        }
+    }
+
+    Timer {
+        id: idleAutoHideTimer
+        interval: 6000
+        repeat: false
+        onTriggered: {
+            if (!bottomHoverArea.containsMouse && !root.pinned && !root.isExecuting) {
+                cmdInput.focus = false;
+                root.isFocused = false;
+                root.revealed = false;
+            }
+        }
+    }
+
+    Timer {
+        id: postExecAutoHideTimer
+        interval: 1500
+        repeat: false
+        onTriggered: {
+            if (!root.pinned && !bottomHoverArea.containsMouse) {
+                cmdInput.focus = false;
+                root.isFocused = false;
+                root.revealed = false;
             }
         }
     }
@@ -178,8 +208,9 @@ PanelWindow {
         }
         if (lower === "exit" || lower === "quit" || lower === "close") {
             cmdInput.text = "";
-            root.revealed = false;
+            cmdInput.focus = false;
             root.isFocused = false;
+            root.revealed = false;
             return;
         }
 
@@ -188,6 +219,8 @@ PanelWindow {
         root.statusIsError = false;
         root.pendingCommand = q;
         cmdInput.text = "";
+        cmdInput.focus = false;
+        root.isFocused = false;
         execProcess.running = true;
     }
 
@@ -196,6 +229,7 @@ PanelWindow {
             root.revealed = false;
             root.pinned = false;
             root.isFocused = false;
+            cmdInput.focus = false;
         } else {
             root.revealed = true;
             focusInput();
@@ -211,12 +245,14 @@ PanelWindow {
         root.revealed = false;
         root.pinned = false;
         root.isFocused = false;
+        cmdInput.focus = false;
     }
 
     function focusInput() {
         root.revealed = true;
         root.isFocused = true;
         cmdInput.forceActiveFocus();
+        idleAutoHideTimer.restart();
     }
 
     // ============================================================
@@ -227,7 +263,7 @@ PanelWindow {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        height: (root.revealed || root.pinned || root.isAnimating || root.isFocused) ? root.fullHeight : 4
+        height: (root.revealed || root.pinned || root.isAnimating) ? root.fullHeight : 4
         hoverEnabled: true
         acceptedButtons: Qt.NoButton
         propagateComposedEvents: true
@@ -235,11 +271,12 @@ PanelWindow {
 
         onEntered: {
             hideDebounceTimer.stop();
+            postExecAutoHideTimer.stop();
             root.revealed = true;
         }
 
         onExited: {
-            if (!root.pinned && !cmdInput.activeFocus && !root.isExecuting) {
+            if (!root.pinned) {
                 hideDebounceTimer.restart();
             }
         }
@@ -248,15 +285,15 @@ PanelWindow {
             id: barContainer
             width: parent.width
             height: root.fullHeight
-            y: (root.revealed || root.pinned || root.isFocused) ? 0 : (root.fullHeight - 2)
-            opacity: (root.revealed || root.pinned || root.isFocused) ? 1.0 : 0.0
+            y: (root.revealed || root.pinned) ? 0 : (root.fullHeight - 2)
+            opacity: (root.revealed || root.pinned) ? 1.0 : 0.0
 
             Behavior on y {
                 SequentialAnimation {
                     ScriptAction { script: root.isAnimating = true }
                     NumberAnimation {
-                        duration: (root.revealed || root.pinned || root.isFocused) ? 220 : 160
-                        easing.type: (root.revealed || root.pinned || root.isFocused) ? Easing.OutCubic : Easing.InQuad
+                        duration: (root.revealed || root.pinned) ? 220 : 160
+                        easing.type: (root.revealed || root.pinned) ? Easing.OutCubic : Easing.InQuad
                     }
                     ScriptAction { script: root.isAnimating = false }
                 }
@@ -451,17 +488,22 @@ PanelWindow {
                                 anchors.verticalCenter: parent.verticalCenter
                             }
 
+                            onTextChanged: {
+                                if (cmdInput.activeFocus) {
+                                    idleAutoHideTimer.restart();
+                                }
+                            }
+
                             Keys.onPressed: function(event) {
+                                idleAutoHideTimer.restart();
                                 if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                                     root.executeCommand(cmdInput.text);
                                     event.accepted = true;
                                 } else if (event.key === Qt.Key_Escape) {
-                                    if (cmdInput.text.length > 0) {
-                                        cmdInput.text = "";
-                                    } else {
-                                        root.isFocused = false;
-                                        if (!root.pinned) root.revealed = false;
-                                    }
+                                    cmdInput.text = "";
+                                    cmdInput.focus = false;
+                                    root.isFocused = false;
+                                    if (!root.pinned) root.revealed = false;
                                     event.accepted = true;
                                 } else if (event.key === Qt.Key_Up) {
                                     if (root.commandHistory.length > 0) {
