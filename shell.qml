@@ -9,6 +9,8 @@ import "modules/background"
 import "modules/popups"
 import "modules/bar"
 import "modules/bar/popouts"
+import "modules/bottombar"
+import "modules/lockscreen"
 
 ShellRoot {
     id: root
@@ -23,6 +25,10 @@ ShellRoot {
 
     Bar {
         id: bar
+    }
+
+    BottomBar {
+        id: bottomBar
     }
 
     // Automatic Live Workspace Snapshot Cache
@@ -77,6 +83,18 @@ ShellRoot {
 
     AreaPicker {
         id: areaPicker
+    }
+
+    LockScreen {
+        id: lockScreen
+    }
+
+    GlobalShortcut {
+        name: "lockScreen"
+        description: "Lock Screen via NERV Lockscreen"
+        onPressed: {
+            lockScreen.lock();
+        }
     }
 
     GlobalShortcut {
@@ -353,6 +371,54 @@ ShellRoot {
 
         function close() {
             networkPopout.close();
+        }
+    }
+
+    GlobalShortcut {
+        name: "toggleBottomBar"
+        description: "Toggle NERV Bottom Command Line Bar"
+        onPressed: {
+            bottomBar.toggle();
+        }
+    }
+
+    IpcHandler {
+        target: "bottombar"
+
+        function toggle() {
+            bottomBar.toggle();
+        }
+
+        function open() {
+            bottomBar.open();
+        }
+
+        function close() {
+            bottomBar.close();
+        }
+
+        function focus() {
+            bottomBar.focusInput();
+        }
+    }
+
+    IpcHandler {
+        target: "qwen"
+
+        function exec(cmd: string) {
+            bottomBar.executeCommand(cmd);
+        }
+
+        function open() {
+            bottomBar.open();
+        }
+
+        function close() {
+            bottomBar.close();
+        }
+
+        function toggle() {
+            bottomBar.toggle();
         }
     }
 }
