@@ -496,6 +496,20 @@ PanelWindow {
                         border.width: 1.5
                         border.color: isSelected ? root.primary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45)
 
+                        scale: catMouse.pressed ? 0.93 : (catMouse.containsMouse ? 1.05 : 1.0)
+                        Behavior on scale {
+                            NumberAnimation { duration: 150; easing.type: Easing.OutBack; easing.overshoot: 1.25 }
+                        }
+
+                        // Top Specular Highlight
+                        Rectangle {
+                            anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+                            anchors.leftMargin: 2; anchors.rightMargin: 2
+                            height: 1
+                            color: Qt.rgba(1.0, 1.0, 1.0, 0.5)
+                            visible: parent.isSelected || catMouse.containsMouse
+                        }
+
                         Text {
                             id: catText
                             anchors.centerIn: parent
@@ -537,14 +551,44 @@ PanelWindow {
                     anchors.margins: 4
                     spacing: 3
                     model: root.filteredApps
-                    boundsBehavior: Flickable.StopAtBounds
+                    boundsBehavior: Flickable.DragOverBounds
 
                     delegate: Rectangle {
+                        id: cascadeDelegate
                         width: appListView.width
                         height: 34
                         color: (index === root.selectedIndex) ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.14) : (itemMouse.containsMouse ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.06) : "transparent")
                         border.width: (index === root.selectedIndex) ? 1 : 0
                         border.color: root.primary
+
+                        // Orchestrated Staggered Cascade Entrance
+                        opacity: 0.0
+                        transform: Translate { id: transX; x: -14 }
+                        Component.onCompleted: cascadeAnim.start()
+
+                        SequentialAnimation {
+                            id: cascadeAnim
+                            PauseAnimation { duration: Math.min(index * 25, 250) }
+                            ParallelAnimation {
+                                NumberAnimation { target: cascadeDelegate; property: "opacity"; to: 1.0; duration: 200; easing.type: Easing.OutQuad }
+                                NumberAnimation { target: transX; property: "x"; to: 0; duration: 240; easing.type: Easing.OutCubic }
+                            }
+                        }
+
+                        // Tactile Spring Scale
+                        scale: itemMouse.pressed ? 0.98 : (itemMouse.containsMouse ? 1.015 : 1.0)
+                        Behavior on scale {
+                            NumberAnimation { duration: 150; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
+                        }
+
+                        // Top Specular Highlight Edge on Selected
+                        Rectangle {
+                            anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+                            anchors.leftMargin: 4; anchors.rightMargin: 4
+                            height: 1
+                            color: Qt.rgba(1.0, 1.0, 1.0, 0.5)
+                            visible: index === root.selectedIndex || itemMouse.containsMouse
+                        }
 
                         RowLayout {
                             anchors.fill: parent

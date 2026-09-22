@@ -1,0 +1,3 @@
+LockScreen 1.0 LockScreen.qml
+LockScreenContent 1.0 LockScreenContent.qml
+TestLockScreen 1.0 TestLockScreen.qml

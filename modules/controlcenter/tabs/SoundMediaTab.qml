@@ -30,6 +30,22 @@ Item {
         color: selected ? root.primary : "#ffffff"
         border.width: 1
         border.color: selected ? root.secondary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.3)
+        scale: fbMouse.pressed ? 0.94 : (fbMouse.containsMouse ? 1.05 : 1.0)
+
+        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on border.color { ColorAnimation { duration: 120 } }
+        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
+
+        // Top Specular Highlight Rim
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: "#ffffff"
+            opacity: fb.selected ? 0.9 : 0.35
+        }
+
         Text {
             anchors.centerIn: parent
             text: fb.label
@@ -38,7 +54,13 @@ Item {
             font.pixelSize: 7
             font.bold: true
         }
-        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: fb.clicked() }
+        MouseArea {
+            id: fbMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: fb.clicked()
+        }
     }
 
     component WaveSlider: Rectangle {
@@ -52,7 +74,20 @@ Item {
         height: 76
         color: root.itemBg
         border.width: 1
-        border.color: root.itemBorder
+        border.color: wsMouse.containsMouse ? root.primary : root.itemBorder
+
+        Behavior on border.color { ColorAnimation { duration: 120 } }
+
+        // Top Specular Highlight Rim
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: "#ffffff"
+            opacity: wsMouse.containsMouse ? 0.85 : 0.3
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
 
         function getWaveY(xPx, h) {
             if (isOscillating) return h / 2 + Math.sin(xPx * 0.035) * 12 + Math.cos(xPx * 0.07) * 4;
@@ -387,6 +422,16 @@ Item {
             border.width: 1
             border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45)
 
+            // Top Directional Specular Highlight Rim
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: "#ffffff"
+                opacity: 0.7
+            }
+
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 12
@@ -429,83 +474,150 @@ Item {
                     }
                 }
 
-                // Media Info Card
-                RowLayout {
+                // Media Info Card with 2.5D Perspective Tilt & Specular Glare
+                Rectangle {
+                    id: mediaCard
                     Layout.fillWidth: true
-                    spacing: 10
+                    implicitHeight: mediaRow.implicitHeight + 16
+                    color: root.itemBg
+                    border.width: 1
+                    border.color: mediaHover.hovered ? root.primary : root.itemBorder
 
-                    // Album Art Box
-                    Rectangle {
-                        width: 54
-                        height: 54
-                        color: "#ffffff"
-                        border.width: 1
-                        border.color: root.primary
-                        clip: true
+                    scale: mediaHover.hovered ? 1.025 : 1.0
+                    Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
 
-                        Image {
-                            anchors.fill: parent
-                            source: root.currentArtUrl
-                            visible: root.currentArtUrl !== ""
-                            fillMode: Image.PreserveAspectCrop
+                    transform: [
+                        Rotation {
+                            id: mediaRotX
+                            axis.x: 1; axis.y: 0; axis.z: 0
+                            origin.x: mediaCard.width / 2; origin.y: mediaCard.height / 2
+                            angle: 0
+                            Behavior on angle { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                        },
+                        Rotation {
+                            id: mediaRotY
+                            axis.x: 0; axis.y: 1; axis.z: 0
+                            origin.x: mediaCard.width / 2; origin.y: mediaCard.height / 2
+                            angle: 0
+                            Behavior on angle { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
                         }
+                    ]
 
-                        Canvas {
-                            anchors.fill: parent
-                            visible: root.currentArtUrl === ""
-                            onPaint: {
-                                var ctx = getContext("2d");
-                                ctx.clearRect(0, 0, width, height);
-                                ctx.fillStyle = "#ffffff";
-                                ctx.fillRect(0, 0, width, height);
-                                
-                                // Stylized NERV EVA silhouette
-                                ctx.fillStyle = "#cf2824";
-                                ctx.beginPath();
-                                ctx.arc(27, 20, 11, 0, Math.PI * 2);
-                                ctx.fill();
-                                
-                                ctx.beginPath();
-                                ctx.arc(27, 52, 20, Math.PI, 0);
-                                ctx.fill();
-                                
-                                ctx.fillStyle = "#e32a10";
-                                ctx.fillRect(23, 18, 8, 4);
+                    HoverHandler {
+                        id: mediaHover
+                        onPointChanged: {
+                            if (hovered && mediaCard.width > 0 && mediaCard.height > 0) {
+                                var nx = (point.position.x / mediaCard.width) - 0.5;
+                                var ny = (point.position.y / mediaCard.height) - 0.5;
+                                mediaRotY.angle = Math.max(-14.0, Math.min(14.0, nx * 18.0));
+                                mediaRotX.angle = Math.max(-14.0, Math.min(14.0, -ny * 18.0));
+                            }
+                        }
+                        onHoveredChanged: {
+                            if (!hovered) {
+                                mediaRotX.angle = 0;
+                                mediaRotY.angle = 0;
                             }
                         }
                     }
 
-                    // Track Info
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 2
+                    // Top Specular Highlight Rim
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        height: 1
+                        color: "#ffffff"
+                        opacity: mediaHover.hovered ? 0.95 : 0.35
+                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                    }
 
-                        Text {
-                            text: root.currentTitle
-                            color: root.fg
-                            font.family: root.hudFont
-                            font.pixelSize: 11
-                            font.bold: true
-                            elide: Text.ElideRight
-                            Layout.fillWidth: true
+                    RowLayout {
+                        id: mediaRow
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        spacing: 10
+
+                        // Album Art Box with Z-Parallax
+                        Rectangle {
+                            width: 54
+                            height: 54
+                            color: "#ffffff"
+                            border.width: 1
+                            border.color: root.primary
+                            clip: true
+
+                            transform: Translate {
+                                x: mediaHover.hovered ? (mediaHover.point.position.x / mediaCard.width - 0.5) * 5 : 0
+                                y: mediaHover.hovered ? (mediaHover.point.position.y / mediaCard.height - 0.5) * 5 : 0
+                                Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                                Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                            }
+
+                            Image {
+                                anchors.fill: parent
+                                source: root.currentArtUrl
+                                visible: root.currentArtUrl !== ""
+                                fillMode: Image.PreserveAspectCrop
+                            }
+
+                            Canvas {
+                                anchors.fill: parent
+                                visible: root.currentArtUrl === ""
+                                onPaint: {
+                                    var ctx = getContext("2d");
+                                    ctx.clearRect(0, 0, width, height);
+                                    ctx.fillStyle = "#ffffff";
+                                    ctx.fillRect(0, 0, width, height);
+                                    
+                                    // Stylized NERV EVA silhouette
+                                    ctx.fillStyle = "#cf2824";
+                                    ctx.beginPath();
+                                    ctx.arc(27, 20, 11, 0, Math.PI * 2);
+                                    ctx.fill();
+                                    
+                                    ctx.beginPath();
+                                    ctx.arc(27, 52, 20, Math.PI, 0);
+                                    ctx.fill();
+                                    
+                                    ctx.fillStyle = "#e32a10";
+                                    ctx.fillRect(23, 18, 8, 4);
+                                }
+                            }
                         }
 
-                        Text {
-                            text: root.currentArtist
-                            color: root.fgMuted
-                            font.family: root.hudFont
-                            font.pixelSize: 10
-                            elide: Text.ElideRight
+                        // Track Info
+                        ColumnLayout {
                             Layout.fillWidth: true
-                        }
+                            spacing: 2
 
-                        Text {
-                            text: root.currentAlbum
-                            color: root.secondary
-                            font.family: root.hudFont
-                            font.pixelSize: 9
-                            font.bold: true
-                            Layout.fillWidth: true
+                            Text {
+                                text: root.currentTitle
+                                color: root.fg
+                                font.family: root.hudFont
+                                font.pixelSize: 11
+                                font.bold: true
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+
+                            Text {
+                                text: root.currentArtist
+                                color: root.fgMuted
+                                font.family: root.hudFont
+                                font.pixelSize: 10
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+
+                            Text {
+                                text: root.currentAlbum
+                                color: root.secondary
+                                font.family: root.hudFont
+                                font.pixelSize: 9
+                                font.bold: true
+                                Layout.fillWidth: true
+                            }
                         }
                     }
                 }
@@ -522,6 +634,19 @@ Item {
                         color: prevMouse.containsMouse ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.15) : root.itemBg
                         border.width: 1
                         border.color: prevMouse.containsMouse ? root.secondary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.5)
+                        scale: prevMouse.pressed ? 0.96 : (prevMouse.containsMouse ? 1.02 : 1.0)
+                        Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
+
+                        // Top Specular Highlight Rim
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 1
+                            color: "#ffffff"
+                            opacity: prevMouse.containsMouse ? 0.9 : 0.35
+                        }
+
                         Text { anchors.centerIn: parent; text: "« PREV"; color: root.fg; font.family: root.hudFont; font.pixelSize: 9; font.bold: true }
 
                         MouseArea {
@@ -544,6 +669,19 @@ Item {
                         color: pauseMouse.containsMouse ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.4) : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.25)
                         border.width: 1
                         border.color: root.primary
+                        scale: pauseMouse.pressed ? 0.96 : (pauseMouse.containsMouse ? 1.02 : 1.0)
+                        Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
+
+                        // Top Specular Highlight Rim
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 1
+                            color: "#ffffff"
+                            opacity: pauseMouse.containsMouse ? 0.95 : 0.4
+                        }
+
                         Text {
                             anchors.centerIn: parent
                             text: root.isPlaying ? "❚❚ PAUSE" : "▶ PLAY"
@@ -573,6 +711,19 @@ Item {
                         color: nextMouse.containsMouse ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.15) : root.itemBg
                         border.width: 1
                         border.color: nextMouse.containsMouse ? root.secondary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.5)
+                        scale: nextMouse.pressed ? 0.96 : (nextMouse.containsMouse ? 1.02 : 1.0)
+                        Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
+
+                        // Top Specular Highlight Rim
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 1
+                            color: "#ffffff"
+                            opacity: nextMouse.containsMouse ? 0.9 : 0.35
+                        }
+
                         Text { anchors.centerIn: parent; text: "NEXT »"; color: root.fg; font.family: root.hudFont; font.pixelSize: 9; font.bold: true }
 
                         MouseArea {
@@ -1001,6 +1152,16 @@ Item {
             color: root.panelBg
             border.width: 1
             border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45)
+
+            // Top Directional Specular Highlight Rim
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: "#ffffff"
+                opacity: 0.7
+            }
 
             ColumnLayout {
                 anchors.fill: parent

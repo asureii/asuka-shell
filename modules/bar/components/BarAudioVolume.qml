@@ -77,9 +77,27 @@ Rectangle {
 
     Layout.preferredWidth: 140
     Layout.preferredHeight: 26
-    color: root.isPopoutActive ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.22) : ((volAreaMouse.containsMouse || briAreaMouse.containsMouse) ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.15) : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.08))
+    color: root.isPopoutActive ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.22) : ((volAreaMouse.containsMouse || briAreaMouse.containsMouse) ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.16) : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.08))
     border.width: root.isPopoutActive ? 1.5 : 1
-    border.color: root.primary
+    border.color: (volAreaMouse.containsMouse || briAreaMouse.containsMouse) ? "#ff2222" : root.primary
+
+    Behavior on color { ColorAnimation { duration: 140 } }
+    Behavior on border.color { ColorAnimation { duration: 140 } }
+
+    // Tactile Spring Scale
+    scale: (volAreaMouse.pressed || briAreaMouse.pressed) ? 0.94 : ((volAreaMouse.containsMouse || briAreaMouse.containsMouse) ? 1.04 : 1.0)
+    Behavior on scale {
+        NumberAnimation { duration: 150; easing.type: Easing.OutBack; easing.overshoot: 1.25 }
+    }
+
+    // Directional 1px Top Specular Rim
+    Rectangle {
+        anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+        anchors.leftMargin: 2; anchors.rightMargin: 2
+        height: 1
+        color: Qt.rgba(1.0, 1.0, 1.0, 0.5)
+        visible: volAreaMouse.containsMouse || briAreaMouse.containsMouse || root.isPopoutActive
+    }
 
     RowLayout {
         anchors.centerIn: parent

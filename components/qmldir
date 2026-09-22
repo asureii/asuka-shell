@@ -16,3 +16,13 @@ NervOpeningGraphic 1.0 NervOpeningGraphic.qml
 nervopeninggraphic 1.0 NervOpeningGraphic.qml
 NervScanlineBeam 1.0 NervScanlineBeam.qml
 nervscanlinebeam 1.0 NervScanlineBeam.qml
+StudioCard 1.0 StudioCard.qml
+studiocard 1.0 StudioCard.qml
+StudioMagneticButton 1.0 StudioMagneticButton.qml
+studiomagneticbutton 1.0 StudioMagneticButton.qml
+StudioParallaxLayer 1.0 StudioParallaxLayer.qml
+studioparallaxlayer 1.0 StudioParallaxLayer.qml
+StudioCard3D 1.0 StudioCard3D.qml
+studiocard3d 1.0 StudioCard3D.qml
+MagiHoloCore3D 1.0 MagiHoloCore3D.qml
+magiholocore3d 1.0 MagiHoloCore3D.qml

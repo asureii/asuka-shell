@@ -199,6 +199,17 @@ PanelWindow {
                 yScale: Math.max(1.0, root.revealProgress)
             }
 
+            // Top Directional Specular Highlight Rim
+            Rectangle {
+                z: 20
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: "#ffffff"
+                opacity: 0.85
+            }
+
         // Tactical Chamfered Frame Canvas
         Canvas {
             id: frameCanvas
@@ -299,6 +310,10 @@ PanelWindow {
                     color: closeMouse.containsMouse ? root.primary : "transparent"
                     border.width: 1
                     border.color: root.primary
+                    scale: closeMouse.pressed ? 0.90 : (closeMouse.containsMouse ? 1.08 : 1.0)
+
+                    Behavior on color { ColorAnimation { duration: 100 } }
+                    Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
 
                     Text {
                         anchors.centerIn: parent

@@ -133,13 +133,16 @@ PanelWindow {
             Behavior on y {
                 SequentialAnimation {
                     ScriptAction { script: root.isAnimating = true }
-                    NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+                    NumberAnimation {
+                        duration: (root.revealed || root.forceShow || root.hasActivePopout) ? 220 : 160
+                        easing.type: (root.revealed || root.forceShow || root.hasActivePopout) ? Easing.OutCubic : Easing.InQuad
+                    }
                     ScriptAction { script: root.isAnimating = false }
                 }
             }
 
             Behavior on opacity {
-                NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
             }
 
         // Polygonal NERV HUD Vector Background
@@ -159,6 +162,18 @@ PanelWindow {
             centerMidWidth: 260
             centerBottomWidth: 190
             centerBottomY: root.fullHeight - 1
+        }
+
+        // Directional 1px Overhead Specular Highlight
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: barBg.leftChamferWidth
+            anchors.rightMargin: barBg.rightChamferWidth
+            height: 1
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.55)
+            z: 10
         }
 
         // ============================================================

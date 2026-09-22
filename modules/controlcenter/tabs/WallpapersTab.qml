@@ -164,6 +164,16 @@ Item {
             border.width: 1
             border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45)
 
+            // Top Directional Specular Highlight Rim
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: "#ffffff"
+                opacity: 0.7
+            }
+
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 12
@@ -297,6 +307,37 @@ Item {
 
                                     border.width: isCurrent ? 1.5 : (cardMouse.containsMouse ? 1 : 1)
                                     border.color: isCurrent ? root.accent : (cardMouse.containsMouse ? root.secondary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.35))
+                                    scale: cardMouse.pressed ? 0.96 : (cardMouse.containsMouse ? 1.03 : 1.0)
+
+                                    Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
+
+                                    transform: [
+                                        Rotation {
+                                            id: cardRotX
+                                            axis.x: 1; axis.y: 0; axis.z: 0
+                                            origin.x: card.width / 2; origin.y: card.height / 2
+                                            angle: 0
+                                            Behavior on angle { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                                        },
+                                        Rotation {
+                                            id: cardRotY
+                                            axis.x: 0; axis.y: 1; axis.z: 0
+                                            origin.x: card.width / 2; origin.y: card.height / 2
+                                            angle: 0
+                                            Behavior on angle { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                                        }
+                                    ]
+
+                                    // Top Specular Highlight Rim
+                                    Rectangle {
+                                        anchors.top: parent.top
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        height: 1
+                                        color: "#ffffff"
+                                        opacity: cardMouse.containsMouse ? 0.95 : (card.isCurrent ? 0.8 : 0.3)
+                                        Behavior on opacity { NumberAnimation { duration: 120 } }
+                                    }
 
                                     // Subtle Grid Canvas inside Card
                                     Canvas {
@@ -374,6 +415,18 @@ Item {
                                         onClicked: {
                                             root.selectWallpaper(modelData.path, modelData.name);
                                         }
+                                        onPositionChanged: mouse => {
+                                            if (card.width > 0 && card.height > 0) {
+                                                var nx = (mouse.x / card.width) - 0.5;
+                                                var ny = (mouse.y / card.height) - 0.5;
+                                                cardRotY.angle = Math.max(-15.0, Math.min(15.0, nx * 20.0));
+                                                cardRotX.angle = Math.max(-15.0, Math.min(15.0, -ny * 20.0));
+                                            }
+                                        }
+                                        onExited: {
+                                            cardRotX.angle = 0;
+                                            cardRotY.angle = 0;
+                                        }
                                     }
                                 }
                             }
@@ -399,15 +452,15 @@ Item {
                 }
 
                 // ============================================================
-                // LARGE TACTICAL WALLPAPER SHOWCASE (Fills the big empty space)
+                // LARGE TACTICAL WALLPAPER SHOWCASE (StudioCard 2.5D Perspective Card)
                 // ============================================================
-                Rectangle {
+                StudioCard {
+                    id: showcaseCard
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    color: "#ffffff"
-                    border.width: 1
-                    border.color: root.itemBorder
-                    clip: true
+                    cardBg: "#ffffff"
+                    strokeColor: root.primary
+                    maxTilt: 16.0
 
                     // Large Background Image of Active Target
                     Image {
@@ -582,6 +635,16 @@ Item {
             color: root.panelBg
             border.width: 1
             border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45)
+
+            // Top Directional Specular Highlight Rim
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: "#ffffff"
+                opacity: 0.7
+            }
 
             ColumnLayout {
                 anchors.fill: parent

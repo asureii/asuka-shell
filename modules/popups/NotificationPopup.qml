@@ -149,10 +149,26 @@ PanelWindow {
                 property real duration: modelData.durationMs
                 property real progress: 1.0
 
-                transform: Translate {
-                    id: cardTrans
-                    x: -24
-                }
+                transform: [
+                    Translate {
+                        id: cardTrans
+                        x: -24
+                    },
+                    Rotation {
+                        id: cardRotX
+                        axis.x: 1; axis.y: 0; axis.z: 0
+                        origin.x: popupCard.width / 2; origin.y: popupCard.height / 2
+                        angle: 0
+                        Behavior on angle { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                    },
+                    Rotation {
+                        id: cardRotY
+                        axis.x: 0; axis.y: 1; axis.z: 0
+                        origin.x: popupCard.width / 2; origin.y: popupCard.height / 2
+                        angle: 0
+                        Behavior on angle { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                    }
+                ]
                 opacity: 0.0
 
                 ParallelAnimation {
@@ -177,6 +193,31 @@ PanelWindow {
 
                 HoverHandler {
                     id: cardHover
+                    onPointChanged: {
+                        if (hovered && popupCard.width > 0 && popupCard.height > 0) {
+                            var nx = (point.position.x / popupCard.width) - 0.5;
+                            var ny = (point.position.y / popupCard.height) - 0.5;
+                            cardRotY.angle = Math.max(-13.0, Math.min(13.0, nx * 16.0));
+                            cardRotX.angle = Math.max(-13.0, Math.min(13.0, -ny * 16.0));
+                        }
+                    }
+                    onHoveredChanged: {
+                        if (!hovered) {
+                            cardRotX.angle = 0;
+                            cardRotY.angle = 0;
+                        }
+                    }
+                }
+
+                // Top Specular Highlight Rim
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: "#ffffff"
+                    opacity: cardHover.hovered ? 0.95 : 0.4
+                    Behavior on opacity { NumberAnimation { duration: 150 } }
                 }
 
                 NumberAnimation on progress {
@@ -274,6 +315,10 @@ PanelWindow {
                                 color: closeMouse.containsMouse ? root.primary : "#ffffff"
                                 border.width: 1
                                 border.color: root.primary
+                                scale: closeMouse.pressed ? 0.90 : (closeMouse.containsMouse ? 1.10 : 1.0)
+
+                                Behavior on color { ColorAnimation { duration: 100 } }
+                                Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
 
                                 Text {
                                     anchors.centerIn: parent
@@ -392,6 +437,10 @@ PanelWindow {
                                 color: actBtnMouse.containsMouse ? root.primary : "#ffffff"
                                 border.width: 1
                                 border.color: root.primary
+                                scale: actBtnMouse.pressed ? 0.95 : (actBtnMouse.containsMouse ? 1.03 : 1.0)
+
+                                Behavior on color { ColorAnimation { duration: 100 } }
+                                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
 
                                 Text {
                                     anchors.centerIn: parent

@@ -45,12 +45,13 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        spacing: 4
+        spacing: 5
 
         Text {
             text: "•"
             color: root.primary
             font.pixelSize: 10
+            scale: 1.1
         }
 
         Text {
@@ -59,8 +60,14 @@ Item {
             font.family: root.hudFont
             font.pixelSize: 10
             font.bold: true
+            font.letterSpacing: 0.4
             elide: Text.ElideRight
             Layout.fillWidth: true
+
+            Behavior on opacity {
+                NumberAnimation { duration: 150 }
+            }
         }
     }
+
 }

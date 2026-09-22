@@ -52,6 +52,35 @@ Item {
         }
     }
 
+    // Studio Tactile Hover and Spring Scale
+    scale: clockMouse.pressed ? 0.95 : (clockMouse.containsMouse ? 1.03 : 1.0)
+    Behavior on scale {
+        NumberAnimation { duration: 160; easing.type: Easing.OutBack; easing.overshoot: 1.25 }
+    }
+
+    // Dynamic Specular Glare across Central Pod
+    Item {
+        anchors.fill: parent
+        clip: true
+        opacity: clockMouse.containsMouse ? 0.25 : 0.0
+        Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+
+        Rectangle {
+            id: podSpecular
+            width: parent.width * 1.4
+            height: parent.height * 1.4
+            property real normX: 0
+            x: (parent.width - width) / 2 + (normX * parent.width * 0.3)
+            y: (parent.height - height) / 2
+            radius: width / 2
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(1.0, 1.0, 1.0, 0.45) }
+                GradientStop { position: 0.5; color: Qt.rgba(1.0, 1.0, 1.0, 0.05) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+    }
+
     ColumnLayout {
         anchors.centerIn: parent
         spacing: 3
@@ -81,10 +110,19 @@ Item {
 
     // Interactive Click toggles Control Center
     MouseArea {
+        id: clockMouse
         anchors.fill: parent
+        hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
+        onPositionChanged: (mouse) => {
+            podSpecular.normX = Math.max(-1.0, Math.min(1.0, (mouse.x - width / 2) / (width / 2)));
+        }
+        onExited: {
+            podSpecular.normX = 0;
+        }
         onClicked: {
             if (controlCenter) (typeof controlCenter.toggle === "function" ? controlCenter.toggle() : (controlCenter.visible = !controlCenter.visible));
         }
     }
 }
+

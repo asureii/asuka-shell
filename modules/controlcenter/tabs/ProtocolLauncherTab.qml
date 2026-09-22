@@ -214,6 +214,16 @@ Item {
             border.width: 1
             border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45)
 
+            // Top Specular Highlight Rim
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: "#ffffff"
+                opacity: 0.7
+            }
+
             ColumnLayout {
                 anchors.fill: parent
                 spacing: 0
@@ -317,12 +327,28 @@ Item {
                             model: ["ALL", "EVA SUITE", "SYSTEM", "NETWORK", "DEV", "UTILITY", "MEDIA"]
 
                             Rectangle {
+                                id: catPill
                                 readonly property bool isSelected: root.selectedCategory === modelData
                                 height: 16
                                 Layout.fillWidth: true
                                 color: isSelected ? root.primary : "#ffffff"
                                 border.width: 1
                                 border.color: isSelected ? root.secondary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.3)
+                                scale: pillMouse.pressed ? 0.94 : (pillMouse.containsMouse ? 1.05 : 1.0)
+
+                                Behavior on color { ColorAnimation { duration: 120 } }
+                                Behavior on border.color { ColorAnimation { duration: 120 } }
+                                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
+
+                                // Top Specular Highlight Rim
+                                Rectangle {
+                                    anchors.top: parent.top
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    height: 1
+                                    color: "#ffffff"
+                                    opacity: catPill.isSelected ? 0.9 : 0.35
+                                }
 
                                 Text {
                                     anchors.centerIn: parent
@@ -334,7 +360,9 @@ Item {
                                 }
 
                                 MouseArea {
+                                    id: pillMouse
                                     anchors.fill: parent
+                                    hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
                                         root.selectedCategory = modelData;
@@ -391,6 +419,28 @@ Item {
                                                                             : (index % 2 === 0 ? Qt.rgba(0, 0, 0, 0.4) : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.05)))
                                 border.width: isSelected ? 1 : 0
                                 border.color: root.secondary
+                                scale: rowMouse.pressed ? 0.98 : (rowMouse.containsMouse ? 1.01 : 1.0)
+
+                                Behavior on color { ColorAnimation { duration: 100 } }
+                                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
+
+                                // Top Specular Highlight Rim
+                                Rectangle {
+                                    anchors.top: parent.top
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    height: 1
+                                    color: "#ffffff"
+                                    opacity: appRow.isSelected ? 0.95 : (rowMouse.containsMouse ? 0.6 : 0.2)
+                                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                                }
+
+                                opacity: root.visible ? 1.0 : 0.0
+                                transform: Translate {
+                                    x: root.visible ? 0 : -8
+                                    Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                                }
+                                Behavior on opacity { NumberAnimation { duration: 180 } }
 
                                 RowLayout {
                                     anchors.fill: parent
@@ -526,6 +576,16 @@ Item {
             border.width: 1
             border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45)
 
+            // Top Specular Highlight Rim
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: "#ffffff"
+                opacity: 0.7
+            }
+
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 12
@@ -575,14 +635,14 @@ Item {
                     }
                 }
 
-                // Main App Preview Card (Thumbnail & Info)
-                Rectangle {
+                // Main App Preview Card (Thumbnail & Info) (StudioCard 2.5D Perspective Card)
+                StudioCard {
+                    id: previewCard
                     Layout.fillWidth: true
                     height: 190
-                    color: root.itemBg
-                    border.width: 1
-                    border.color: root.itemBorder
-                    clip: true
+                    cardBg: root.itemBg
+                    strokeColor: root.primary
+                    maxTilt: 16.0
 
                     // Hex HUD background inside preview card
                     NervHudGrid {
@@ -596,13 +656,20 @@ Item {
                         anchors.margins: 14
                         spacing: 16
 
-                        // Big Tactical App Thumbnail Icon Frame
+                        // Big Tactical App Thumbnail Icon Frame with Z-Parallax
                         Rectangle {
                             Layout.preferredWidth: 100
                             Layout.preferredHeight: 100
                             color: "#ffffff"
                             border.width: 2
                             border.color: root.secondary
+
+                            transform: Translate {
+                                x: previewCard.normX * 8
+                                y: previewCard.normY * 8
+                                Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                                Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                            }
 
                             // Top-Left Corner Bracket
                             Rectangle {
@@ -1142,11 +1209,27 @@ Item {
 
                         // Launch Protocol Button
                         Rectangle {
+                            id: launchBtn
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             color: launchMouse.containsMouse ? root.primary : "#ffffff"
                             border.width: 1
                             border.color: root.secondary
+                            scale: launchMouse.pressed ? 0.96 : (launchMouse.containsMouse ? 1.02 : 1.0)
+
+                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
+
+                            // Top Specular Highlight Rim
+                            Rectangle {
+                                anchors.top: parent.top
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                height: 1
+                                color: "#ffffff"
+                                opacity: launchMouse.containsMouse ? 0.95 : 0.4
+                                Behavior on opacity { NumberAnimation { duration: 120 } }
+                            }
 
                             RowLayout {
                                 anchors.centerIn: parent
@@ -1179,6 +1262,7 @@ Item {
 
                         // Terminate Instance Button
                         Rectangle {
+                            id: termBtn
                             readonly property bool canTerminate: root.selectedApp && root.selectedApp.isRunning
                             Layout.preferredWidth: 160
                             Layout.fillHeight: true
@@ -1186,6 +1270,21 @@ Item {
                             border.width: 1
                             border.color: canTerminate ? root.primary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.25)
                             opacity: canTerminate ? 1.0 : 0.45
+                            scale: termMouse.pressed ? 0.96 : (termMouse.containsMouse && canTerminate ? 1.02 : 1.0)
+
+                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
+
+                            // Top Specular Highlight Rim
+                            Rectangle {
+                                anchors.top: parent.top
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                height: 1
+                                color: "#ffffff"
+                                opacity: termMouse.containsMouse ? 0.95 : 0.35
+                                Behavior on opacity { NumberAnimation { duration: 120 } }
+                            }
 
                             RowLayout {
                                 anchors.centerIn: parent

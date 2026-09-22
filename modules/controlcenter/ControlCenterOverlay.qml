@@ -91,10 +91,18 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: (root.visible && !root.isClosing) ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-    // Unanchored PanelWindow is centered on screen by layer-shell
-    implicitWidth: 1220
-    implicitHeight: 700
+    anchors {
+        top: true
+        bottom: true
+        left: true
+        right: true
+    }
+
+    readonly property real hudWidth: 1220
+    readonly property real hudHeight: 700
+
     color: "transparent"
 
     visible: false
@@ -291,28 +299,68 @@ PanelWindow {
     }
 
     // ============================================================
-    // REVEAL CLIP MASK (Top-to-Bottom Scissor Reveal)
+    // 0. FULLSCREEN BACKDROP SCRIM (DARKENED / TINTED BACKGROUND)
+    // ============================================================
+    Rectangle {
+        id: backdropScrim
+        anchors.fill: parent
+        color: Qt.rgba(0.0, 0.0, 0.0, 0.80)
+        opacity: root.revealProgress
+
+        // Subtle atmospheric tactical boundary border
+        Rectangle {
+            anchors.fill: parent
+            color: "transparent"
+            border.width: 1
+            border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.25)
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.ArrowCursor
+            onClicked: root.close()
+        }
+    }
+
+    // ============================================================
+    // 1. CENTERED HUD CONTAINER (1220 x 700)
     // ============================================================
     Item {
-        id: revealMask
-        width: 1220
-        height: Math.round(root.revealProgress * root.implicitHeight)
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        clip: true
+        id: hudCenterBox
+        width: root.hudWidth
+        height: root.hudHeight
+        anchors.centerIn: parent
 
-        Rectangle {
-            id: overlayContainer
-            width: 1220
-            height: root.implicitHeight
+        // ============================================================
+        // REVEAL CLIP MASK (Top-to-Bottom Scissor Reveal)
+        // ============================================================
+        Item {
+            id: revealMask
+            width: root.hudWidth
+            height: Math.round(root.revealProgress * root.hudHeight)
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            focus: true
-            radius: 0
-            color: root.bg
-            border.width: 1
-            border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.65)
             clip: true
+
+            Rectangle {
+                id: overlayContainer
+                width: root.hudWidth
+                height: root.hudHeight
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                focus: true
+                radius: 0
+                color: root.bg
+                border.width: 1
+                border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.65)
+                clip: true
+
+                // Shield clicks inside HUD from propagating to backdropScrim
+                MouseArea {
+                    anchors.fill: parent
+                    z: -10
+                    onClicked: {}
+                }
 
             // Directional 1px Overhead Specular Highlight Rim
             Rectangle {
@@ -1212,8 +1260,8 @@ PanelWindow {
         id: tacticalReticleFrame
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
-        width: 1220
-        height: root.implicitHeight
+        width: root.hudWidth
+        height: root.hudHeight
         z: 90
         visible: (root.reticleDeploy > 0.01 || root.revealProgress > 0.01) && root.visible
         opacity: Math.min(1.0, root.reticleDeploy * 1.8)
@@ -1329,9 +1377,9 @@ PanelWindow {
     Item {
         id: scanlineBeam
         anchors.horizontalCenter: parent.horizontalCenter
-        width: 1220
+        width: root.hudWidth
         height: 36
-        y: Math.round(root.revealProgress * root.implicitHeight) - 34
+        y: Math.round(root.revealProgress * root.hudHeight) - 34
         z: 100
         visible: (root.isAnimating || root.revealProgress < 1.0) && root.beamOpacity > 0.0
         opacity: root.beamOpacity
@@ -1436,6 +1484,8 @@ PanelWindow {
                 height: 4
                 color: "#ff2222"
             }
-        }
-    }
+        } // end RowLayout
+    } // end scanlineBeam
+    } // end hudCenterBox
 }
+

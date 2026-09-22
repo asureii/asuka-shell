@@ -141,20 +141,91 @@ Item {
         spacing: 10
 
         // ============================================================
-        // COLUMN 1: NEURAL PROCESSOR CORES
+        // COLUMN 1: NEURAL PROCESSOR CORES (Studio 2.5D Tilt Card)
         // ============================================================
         Rectangle {
+            id: col1Card
             Layout.fillHeight: true
             Layout.preferredWidth: 300
             Layout.minimumWidth: 260
             color: root.panelBg
             border.width: 1
-            border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45)
+            border.color: col1Hover.hovered ? root.primary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45)
+
+            Behavior on border.color { ColorAnimation { duration: 150 } }
+
+            property real normX: 0.0
+            property real normY: 0.0
+
+            transform: [
+                Rotation {
+                    origin.x: col1Card.width / 2; origin.y: col1Card.height / 2
+                    axis { x: 0; y: 1; z: 0 }
+                    angle: col1Card.normX * 13.0
+                    Behavior on angle { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                },
+                Rotation {
+                    origin.x: col1Card.width / 2; origin.y: col1Card.height / 2
+                    axis { x: 1; y: 0; z: 0 }
+                    angle: -col1Card.normY * 13.0
+                    Behavior on angle { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                }
+            ]
+
+            scale: col1Hover.hovered ? 1.025 : 1.0
+            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
+
+            // Directional 1px Top Specular Rim
+            Rectangle {
+                anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+                height: 1
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.75)
+                z: 5
+            }
+
+            // Dynamic Roving Specular Glare
+            Item {
+                anchors.fill: parent
+                clip: true
+                z: 2
+                opacity: col1Hover.hovered ? 0.25 : 0.0
+                Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+
+                Rectangle {
+                    width: parent.width * 1.4
+                    height: parent.height * 1.4
+                    x: (parent.width - width) / 2 + (col1Card.normX * parent.width * 0.35)
+                    y: (parent.height - height) / 2 + (col1Card.normY * parent.height * 0.35)
+                    radius: width / 2
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.rgba(1.0, 1.0, 1.0, 0.45) }
+                        GradientStop { position: 0.45; color: Qt.rgba(1.0, 1.0, 1.0, 0.05) }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                }
+            }
+
+            HoverHandler {
+                id: col1Hover
+                onPointChanged: {
+                    if (hovered && col1Card.width > 0 && col1Card.height > 0) {
+                        col1Card.normX = Math.max(-1.0, Math.min(1.0, (point.position.x - col1Card.width / 2) / (col1Card.width / 2)));
+                        col1Card.normY = Math.max(-1.0, Math.min(1.0, (point.position.y - col1Card.height / 2) / (col1Card.height / 2)));
+                    }
+                }
+                onHoveredChanged: {
+                    if (!hovered) {
+                        col1Card.normX = 0.0;
+                        col1Card.normY = 0.0;
+                    }
+                }
+            }
 
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 12
                 spacing: 10
+                z: 6
 
                 // Header Row
                 RowLayout {
@@ -416,19 +487,90 @@ Item {
         }
 
         // ============================================================
-        // COLUMN 2: THERMALS & POWER + NODE IDENTITY & EKG
+        // COLUMN 2: THERMALS & POWER + NODE IDENTITY & EKG (Studio 2.5D Tilt Card)
         // ============================================================
         Rectangle {
+            id: col2Card
             Layout.fillHeight: true
             Layout.fillWidth: true
             color: root.panelBg
             border.width: 1
-            border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45)
+            border.color: col2Hover.hovered ? root.primary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45)
+
+            Behavior on border.color { ColorAnimation { duration: 150 } }
+
+            property real normX: 0.0
+            property real normY: 0.0
+
+            transform: [
+                Rotation {
+                    origin.x: col2Card.width / 2; origin.y: col2Card.height / 2
+                    axis { x: 0; y: 1; z: 0 }
+                    angle: col2Card.normX * 13.0
+                    Behavior on angle { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                },
+                Rotation {
+                    origin.x: col2Card.width / 2; origin.y: col2Card.height / 2
+                    axis { x: 1; y: 0; z: 0 }
+                    angle: -col2Card.normY * 13.0
+                    Behavior on angle { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                }
+            ]
+
+            scale: col2Hover.hovered ? 1.025 : 1.0
+            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
+
+            // Directional 1px Top Specular Rim
+            Rectangle {
+                anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+                height: 1
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.75)
+                z: 5
+            }
+
+            // Dynamic Roving Specular Glare
+            Item {
+                anchors.fill: parent
+                clip: true
+                z: 2
+                opacity: col2Hover.hovered ? 0.25 : 0.0
+                Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+
+                Rectangle {
+                    width: parent.width * 1.4
+                    height: parent.height * 1.4
+                    x: (parent.width - width) / 2 + (col2Card.normX * parent.width * 0.35)
+                    y: (parent.height - height) / 2 + (col2Card.normY * parent.height * 0.35)
+                    radius: width / 2
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.rgba(1.0, 1.0, 1.0, 0.45) }
+                        GradientStop { position: 0.45; color: Qt.rgba(1.0, 1.0, 1.0, 0.05) }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                }
+            }
+
+            HoverHandler {
+                id: col2Hover
+                onPointChanged: {
+                    if (hovered && col2Card.width > 0 && col2Card.height > 0) {
+                        col2Card.normX = Math.max(-1.0, Math.min(1.0, (point.position.x - col2Card.width / 2) / (col2Card.width / 2)));
+                        col2Card.normY = Math.max(-1.0, Math.min(1.0, (point.position.y - col2Card.height / 2) / (col2Card.height / 2)));
+                    }
+                }
+                onHoveredChanged: {
+                    if (!hovered) {
+                        col2Card.normX = 0.0;
+                        col2Card.normY = 0.0;
+                    }
+                }
+            }
 
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 12
                 spacing: 12
+                z: 6
 
                 // Section 1: THERMALS & POWER
                 RowLayout {
@@ -745,20 +887,91 @@ Item {
         }
 
         // ============================================================
-        // COLUMN 3: MEMORY & STORAGE BUFFERS
+        // COLUMN 3: MEMORY & STORAGE BUFFERS (Studio 2.5D Tilt Card)
         // ============================================================
         Rectangle {
+            id: col3Card
             Layout.fillHeight: true
             Layout.preferredWidth: 300
             Layout.minimumWidth: 260
             color: root.panelBg
             border.width: 1
-            border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45)
+            border.color: col3Hover.hovered ? root.primary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45)
+
+            Behavior on border.color { ColorAnimation { duration: 150 } }
+
+            property real normX: 0.0
+            property real normY: 0.0
+
+            transform: [
+                Rotation {
+                    origin.x: col3Card.width / 2; origin.y: col3Card.height / 2
+                    axis { x: 0; y: 1; z: 0 }
+                    angle: col3Card.normX * 13.0
+                    Behavior on angle { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                },
+                Rotation {
+                    origin.x: col3Card.width / 2; origin.y: col3Card.height / 2
+                    axis { x: 1; y: 0; z: 0 }
+                    angle: -col3Card.normY * 13.0
+                    Behavior on angle { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                }
+            ]
+
+            scale: col3Hover.hovered ? 1.025 : 1.0
+            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
+
+            // Directional 1px Top Specular Rim
+            Rectangle {
+                anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+                height: 1
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.75)
+                z: 5
+            }
+
+            // Dynamic Roving Specular Glare
+            Item {
+                anchors.fill: parent
+                clip: true
+                z: 2
+                opacity: col3Hover.hovered ? 0.25 : 0.0
+                Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+
+                Rectangle {
+                    width: parent.width * 1.4
+                    height: parent.height * 1.4
+                    x: (parent.width - width) / 2 + (col3Card.normX * parent.width * 0.35)
+                    y: (parent.height - height) / 2 + (col3Card.normY * parent.height * 0.35)
+                    radius: width / 2
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.rgba(1.0, 1.0, 1.0, 0.45) }
+                        GradientStop { position: 0.45; color: Qt.rgba(1.0, 1.0, 1.0, 0.05) }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                }
+            }
+
+            HoverHandler {
+                id: col3Hover
+                onPointChanged: {
+                    if (hovered && col3Card.width > 0 && col3Card.height > 0) {
+                        col3Card.normX = Math.max(-1.0, Math.min(1.0, (point.position.x - col3Card.width / 2) / (col3Card.width / 2)));
+                        col3Card.normY = Math.max(-1.0, Math.min(1.0, (point.position.y - col3Card.height / 2) / (col3Card.height / 2)));
+                    }
+                }
+                onHoveredChanged: {
+                    if (!hovered) {
+                        col3Card.normX = 0.0;
+                        col3Card.normY = 0.0;
+                    }
+                }
+            }
 
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 12
                 spacing: 12
+                z: 6
 
                 // Header
                 Text {

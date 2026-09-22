@@ -270,21 +270,86 @@ PanelWindow {
         // Keyboard navigation
         Keys.onEscapePressed: root.close()
 
-        // Background Outer Card
+        // Background Outer Card with 2.5D Perspective Tilt
         Rectangle {
             id: cardRect
             width: parent.width
             height: root.cardHeight
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            transform: Scale {
-                origin.x: cardRect.width / 2
-                origin.y: 0
-                yScale: Math.max(1.0, root.revealProgress)
-            }
+
+            property real normX: 0.0
+            property real normY: 0.0
+
+            transform: [
+                Scale {
+                    origin.x: cardRect.width / 2
+                    origin.y: 0
+                    yScale: Math.max(1.0, root.revealProgress)
+                },
+                Rotation {
+                    origin.x: cardRect.width / 2; origin.y: cardRect.height / 2
+                    axis { x: 0; y: 1; z: 0 }
+                    angle: cardRect.normX * 14.0
+                    Behavior on angle { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                },
+                Rotation {
+                    origin.x: cardRect.width / 2; origin.y: cardRect.height / 2
+                    axis { x: 1; y: 0; z: 0 }
+                    angle: -cardRect.normY * 14.0
+                    Behavior on angle { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+                }
+            ]
+
             color: root.panelBg
             border.width: 1.5
             border.color: root.primary
+
+            // Directional 1px Overhead Specular Highlight Rim
+            Rectangle {
+                anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+                height: 1
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.70)
+                z: 4
+            }
+
+            // Dynamic Roving Specular Glare
+            Item {
+                anchors.fill: parent
+                clip: true
+                z: 2
+                opacity: cardHover.hovered ? 0.30 : 0.0
+                Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+
+                Rectangle {
+                    width: parent.width * 1.4
+                    height: parent.height * 1.4
+                    x: (parent.width - width) / 2 + (cardRect.normX * parent.width * 0.3)
+                    y: (parent.height - height) / 2 + (cardRect.normY * parent.height * 0.3)
+                    radius: width / 2
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.rgba(1.0, 1.0, 1.0, 0.45) }
+                        GradientStop { position: 0.45; color: Qt.rgba(1.0, 1.0, 1.0, 0.05) }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                }
+            }
+
+            HoverHandler {
+                id: cardHover
+                onPointChanged: {
+                    if (hovered && cardRect.width > 0 && cardRect.height > 0) {
+                        cardRect.normX = Math.max(-1.0, Math.min(1.0, (point.position.x - cardRect.width / 2) / (cardRect.width / 2)));
+                        cardRect.normY = Math.max(-1.0, Math.min(1.0, (point.position.y - cardRect.height / 2) / (cardRect.height / 2)));
+                    }
+                }
+                onHoveredChanged: {
+                    if (!hovered) {
+                        cardRect.normX = 0.0;
+                        cardRect.normY = 0.0;
+                    }
+                }
+            }
 
             // Inner Accent Glow
             Rectangle {
@@ -299,6 +364,7 @@ PanelWindow {
                 anchors.fill: parent
                 anchors.margins: 14
                 spacing: 10
+                z: 5
 
                 // 1. TOP HEADER (Sector Kanji, ID, Close Button)
                 RowLayout {
@@ -628,18 +694,52 @@ PanelWindow {
                             model: root.workspaceClients
 
                             delegate: Rectangle {
+                                id: clientCard
                                 width: processList.width
                                 height: 42
-                                color: itemHover.containsMouse ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.08) :
+                                color: itemHover.containsMouse ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.10) :
                                        (modelData.focused ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.05) : "transparent")
                                 border.width: 1
-                                border.color: modelData.focused ? root.primary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.20)
+                                border.color: modelData.focused ? root.primary : (itemHover.containsMouse ? "#ff2222" : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.20))
+
+                                Behavior on color { ColorAnimation { duration: 120 } }
+                                Behavior on border.color { ColorAnimation { duration: 120 } }
+
+                                // Orchestrated Staggered Cascade
+                                opacity: 0.0
+                                transform: Translate { id: transY; y: 12 }
+                                Component.onCompleted: clientCascadeAnim.start()
+
+                                SequentialAnimation {
+                                    id: clientCascadeAnim
+                                    PauseAnimation { duration: Math.min(index * 30, 240) }
+                                    ParallelAnimation {
+                                        NumberAnimation { target: clientCard; property: "opacity"; to: 1.0; duration: 200; easing.type: Easing.OutQuad }
+                                        NumberAnimation { target: transY; property: "y"; to: 0; duration: 220; easing.type: Easing.OutCubic }
+                                    }
+                                }
+
+                                // Tactile Spring Scale
+                                scale: itemHover.containsMouse ? 1.015 : 1.0
+                                Behavior on scale {
+                                    NumberAnimation { duration: 150; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
+                                }
+
+                                // Directional Specular Lip
+                                Rectangle {
+                                    anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+                                    anchors.leftMargin: 2; anchors.rightMargin: 2
+                                    height: 1
+                                    color: Qt.rgba(1.0, 1.0, 1.0, 0.5)
+                                    visible: modelData.focused || itemHover.containsMouse
+                                }
 
                                 MouseArea {
                                     id: itemHover
                                     anchors.fill: parent
                                     hoverEnabled: true
-                                    cursorShape: Qt.ArrowCursor
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.focusWindow(modelData.address)
                                 }
 
                                 RowLayout {

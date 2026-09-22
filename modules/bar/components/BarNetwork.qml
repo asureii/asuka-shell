@@ -58,7 +58,25 @@ Rectangle {
     Layout.preferredHeight: 26
     color: (netMouse.containsMouse || root.isPopoutActive) ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.22) : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.08)
     border.width: root.isPopoutActive ? 1.5 : 1
-    border.color: root.primary
+    border.color: (netMouse.containsMouse || root.isPopoutActive) ? "#ff2222" : root.primary
+
+    Behavior on color { ColorAnimation { duration: 140 } }
+    Behavior on border.color { ColorAnimation { duration: 140 } }
+
+    // Tactile Spring Scale
+    scale: netMouse.pressed ? 0.92 : (netMouse.containsMouse ? 1.08 : 1.0)
+    Behavior on scale {
+        NumberAnimation { duration: 150; easing.type: Easing.OutBack; easing.overshoot: 1.25 }
+    }
+
+    // Directional 1px Top Specular Rim
+    Rectangle {
+        anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+        anchors.leftMargin: 2; anchors.rightMargin: 2
+        height: 1
+        color: Qt.rgba(1.0, 1.0, 1.0, 0.5)
+        visible: netMouse.containsMouse || root.isPopoutActive
+    }
 
     WifiGlow {
         anchors.centerIn: parent
