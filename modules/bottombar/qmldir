@@ -1,3 +1,0 @@
-module modules.bottombar
-BottomBar 1.0 BottomBar.qml
-BottomBarBackground 1.0 BottomBarBackground.qml
