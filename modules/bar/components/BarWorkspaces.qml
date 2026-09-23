@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import "../../../components"
 
 RowLayout {
     id: root
@@ -11,11 +11,10 @@ RowLayout {
     property color secondary: "#cc0000"
     property color fgMuted: Qt.rgba(0.1, 0.0, 0.0, 0.70)
     property string hudFont: "Liberation Sans, JetBrainsMono Nerd Font"
-    readonly property int currentWorkspaceId: (Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id) ? Hyprland.focusedWorkspace.id : 1
+    readonly property int currentWorkspaceId: NervCompositor.currentWorkspaceId
 
     function switchWorkspace(id) {
-        if (id < 1 || id > 8) return;
-        Quickshell.execDetached(["hyprctl", "eval", "hl.dispatch(hl.dsp.focus({ workspace = " + id + " }))"]);
+        NervCompositor.switchWorkspace(id);
     }
 
     spacing: 6

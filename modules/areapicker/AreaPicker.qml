@@ -83,16 +83,17 @@ Scope {
         }
     }
 
-    // Query active client geometries from Hyprland for window snapping
+    // Query active client geometries for window snapping (supports Sway & Hyprland)
     Process {
         id: clientFetcher
-        command: ["hyprctl", "clients", "-j"]
+        command: ["python3", Quickshell.configPath("scripts/nerv_workspace_clients.py")]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
                     var parsed = JSON.parse(text);
-                    pickerScope.clientRects = parsed
-                        .filter(c => c.mapped && !c.hidden && c.size[0] > 10 && c.size[1] > 10)
+                    var clients = parsed.clients || [];
+                    pickerScope.clientRects = clients
+                        .filter(c => c.size && c.size[0] > 10 && c.size[1] > 10)
                         .map(c => ({
                             x: c.at[0],
                             y: c.at[1],

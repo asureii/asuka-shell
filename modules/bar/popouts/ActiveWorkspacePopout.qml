@@ -178,19 +178,19 @@ PanelWindow {
 
     function focusWindow(address) {
         if (!address) return;
-        Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.focus({ window = 'address:" + address + "' })"]);
+        NervCompositor.focusWindow(address);
         root.close();
     }
 
     function closeWindow(address) {
         if (!address) return;
-        Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.window.close({ window = 'address:" + address + "' })"]);
+        NervCompositor.closeWindow(address);
         refreshTimer.restart();
     }
 
     function switchToWorkspace(wsId) {
         if (wsId < 1 || wsId > 8) return;
-        Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.focus({ workspace = " + wsId + " })"]);
+        NervCompositor.switchWorkspace(wsId);
         root.close();
     }
 

@@ -10,6 +10,7 @@ import "modules/popups"
 import "modules/bar"
 import "modules/bar/popouts"
 import "modules/lockscreen"
+import "components"
 
 ShellRoot {
     id: root
@@ -27,7 +28,7 @@ ShellRoot {
     }
 
     // Automatic Live Workspace Snapshot Cache
-    readonly property int currentWsId: (Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id) ? Hyprland.focusedWorkspace.id : 1
+    readonly property int currentWsId: NervCompositor.currentWorkspaceId
 
     onCurrentWsIdChanged: {
         workspaceSnapshotTimer.restart();
@@ -293,15 +294,15 @@ ShellRoot {
         target: "bar"
 
         function toggle() {
-            bar.visible = !bar.visible;
+            bar.forceShow = !bar.forceShow;
         }
 
         function open() {
-            bar.visible = true;
+            bar.forceShow = true;
         }
 
         function close() {
-            bar.visible = false;
+            bar.forceShow = false;
         }
     }
 

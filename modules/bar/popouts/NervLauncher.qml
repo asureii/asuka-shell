@@ -755,7 +755,7 @@ PanelWindow {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             root.close();
-                            Quickshell.execDetached(["sh", "-c", "uwsm stop || hyprctl dispatch exit || loginctl terminate-session self || loginctl terminate-user $USER"]);
+                            Quickshell.execDetached(["sh", "-c", "uwsm stop || swaymsg exit || hyprctl dispatch exit || loginctl terminate-session self || loginctl terminate-user $USER"]);
                         }
                     }
                 }

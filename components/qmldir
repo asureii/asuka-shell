@@ -1,5 +1,6 @@
 singleton NervSettings 1.0 NervSettings.qml
 singleton NervVitals 1.0 NervVitals.qml
+singleton NervCompositor 1.0 NervCompositor.qml
 NervHazardLines 1.0 NervHazardLines.qml
 nervhazardlines 1.0 NervHazardLines.qml
 NervHudGrid 1.0 NervHudGrid.qml
