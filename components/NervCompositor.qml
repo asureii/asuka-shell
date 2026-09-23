@@ -140,12 +140,68 @@ QtObject {
         }
     }
 
-    // Periodic telemetry polling timer
+    // ============================================================
+    // SWAY REAL-TIME EVENT STREAM (0ms Socket Subscription)
+    // ============================================================
+    property var swaySubscribeProcess: Process {
+        command: ["swaymsg", "-m", "-r", "-t", "subscribe", "[\"workspace\", \"window\"]"]
+        stdout: SplitParser {
+            onRead: data => {
+                var line = (data || "").trim();
+                if (!line) return;
+                try {
+                    var evt = JSON.parse(line);
+                    if (evt.current && evt.change === "focus") {
+                        var n = evt.current.num !== undefined && evt.current.num !== null ? evt.current.num : parseInt(evt.current.name, 10);
+                        if (!isNaN(n) && n >= 1 && n <= 8) {
+                            root._swayWsId = n;
+                        }
+                        if (evt.current.focus && evt.current.focus.length === 0) {
+                            root.activeTitle = "EVA-02 // STANDBY";
+                            root.activeClass = "";
+                        }
+                    } else if (evt.container && (evt.change === "focus" || evt.change === "title")) {
+                        if (evt.container.focused) {
+                            root.activeTitle = evt.container.name || "EVA-02 // STANDBY";
+                            var wp = evt.container.window_properties;
+                            root.activeClass = (wp && wp.class) ? wp.class : (evt.container.app_id || "");
+                        }
+                    } else if (evt.change === "close") {
+                        swayTreeProcess.running = true;
+                    }
+                } catch (e) {}
+            }
+        }
+        onRunningChanged: {
+            if (!running && root.isSway) {
+                swaySubRestartTimer.restart();
+            }
+        }
+    }
+
+    property var swaySubRestartTimer: Timer {
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            if (root.isSway && !swaySubscribeProcess.running) {
+                swaySubscribeProcess.running = true;
+            }
+        }
+    }
+
+    // Periodic telemetry fallback watchdog timer
     property var telemetryTimer: Timer {
-        interval: 750
+        interval: 3000
         running: true
         repeat: true
         triggeredOnStart: true
         onTriggered: root.refresh()
+    }
+
+    Component.onCompleted: {
+        if (root.isSway) {
+            swaySubscribeProcess.running = true;
+        }
+        root.refresh();
     }
 }
