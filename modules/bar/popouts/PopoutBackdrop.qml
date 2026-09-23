@@ -5,6 +5,8 @@ import Quickshell.Wayland
 PanelWindow {
     id: root
 
+    screen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
+
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.exclusionMode: ExclusionMode.Ignore

@@ -11,6 +11,8 @@ import "../../components"
 PanelWindow {
     id: root
 
+    screen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
+
     readonly property color primary: "#cc0000"
     readonly property color secondary: "#cc0000"
     readonly property color accent: "#cc0000"

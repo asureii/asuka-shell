@@ -9,6 +9,8 @@ import "../../../components"
 PanelWindow {
     id: root
 
+    screen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
+
     readonly property color primary: "#cc0000"
     readonly property color secondary: "#cc0000"
     readonly property color accent: "#cc0000"
@@ -48,6 +50,7 @@ PanelWindow {
     }
 
     color: "transparent"
+    visible: false
     property bool isOpen: false
     property real revealProgress: 0.0
     property real beamOpacity: 0.0

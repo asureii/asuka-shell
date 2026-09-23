@@ -9,6 +9,8 @@ import "tabs"
 PanelWindow {
     id: root
 
+    screen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
+
     property int currentTabIndex: 6 // Defaults to Tab 07 (Eva Suite / Operations)
 
     readonly property color bg: "#fcfcfc"
