@@ -40,7 +40,7 @@ ShellRoot {
         repeat: false
         onTriggered: {
             if (root.currentWsId >= 1 && root.currentWsId <= 8) {
-                Quickshell.execDetached([Quickshell.configPath("scripts/nerv_workspace_clients.py"), "--snapshot", "" + root.currentWsId]);
+                Quickshell.execDetached([Quickshell.shellPath("scripts/nerv_workspace_clients.py"), "--snapshot", "" + root.currentWsId]);
             }
         }
     }

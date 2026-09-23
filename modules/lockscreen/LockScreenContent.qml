@@ -13,7 +13,7 @@ Item {
     property bool isLocked: true
     property bool isTestMode: false
     property string username: Quickshell.env("USER") || "camellia"
-    property string avatarSource: Quickshell.configPath("assets/asukapfp.jpg")
+    property string avatarSource: Quickshell.shellPath("assets/asukapfp.jpg")
     property string wallpaperSource: "/home/camellia/Pictures/asukagraphic.png"
 
     signal unlockRequested()

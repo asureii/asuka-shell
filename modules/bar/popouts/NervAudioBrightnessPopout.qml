@@ -200,7 +200,7 @@ PanelWindow {
         var clamped = Math.max(0.05, Math.min(1.0, pct));
         root.displayBrightness = clamped;
         var intPct = Math.round(clamped * 100);
-        Quickshell.execDetached([Quickshell.configPath("scripts/set_brightness.sh"), intPct.toString()]);
+        Quickshell.execDetached([Quickshell.shellPath("scripts/set_brightness.sh"), intPct.toString()]);
         briProcess.running = true;
     }
 

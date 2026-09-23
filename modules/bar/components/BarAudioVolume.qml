@@ -69,7 +69,7 @@ Rectangle {
     function adjustBrightness(delta) {
         var newBri = Math.max(5, Math.min(100, root.brightnessLevel + delta));
         root.brightnessLevel = newBri;
-        Quickshell.execDetached([Quickshell.configPath("scripts/set_brightness.sh"), newBri.toString()]);
+        Quickshell.execDetached([Quickshell.shellPath("scripts/set_brightness.sh"), newBri.toString()]);
         briProcess.running = true;
     }
 

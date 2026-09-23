@@ -54,7 +54,7 @@ Item {
 
     Process {
         id: evaStatusProcess
-        command: [Quickshell.configPath("scripts/evacore_bridge.py"), "status"]
+        command: [Quickshell.shellPath("scripts/evacore_bridge.py"), "status"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -67,7 +67,7 @@ Item {
 
     Process {
         id: evaSortProcess
-        command: [Quickshell.configPath("scripts/evacore_bridge.py"), "sort_run"]
+        command: [Quickshell.shellPath("scripts/evacore_bridge.py"), "sort_run"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -88,7 +88,7 @@ Item {
 
     Process {
         id: evaSortDaemonProcess
-        command: [Quickshell.configPath("scripts/evacore_bridge.py"), "sort_toggle_daemon"]
+        command: [Quickshell.shellPath("scripts/evacore_bridge.py"), "sort_toggle_daemon"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -105,7 +105,7 @@ Item {
 
     Process {
         id: evaRulesProcess
-        command: [Quickshell.configPath("scripts/evacore_bridge.py"), "sort_rules"]
+        command: [Quickshell.shellPath("scripts/evacore_bridge.py"), "sort_rules"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -159,18 +159,18 @@ Item {
     }
 
     function launchEvaFile(path) {
-        Quickshell.execDetached([Quickshell.configPath("scripts/evacore_bridge.py"), "launch_file", path || ""]);
+        Quickshell.execDetached([Quickshell.shellPath("scripts/evacore_bridge.py"), "launch_file", path || ""]);
         evaStatusProcess.running = true;
     }
 
     function launchEvaTerm(cwd, cmd) {
-        Quickshell.execDetached([Quickshell.configPath("scripts/evacore_bridge.py"), "launch_term", cwd || "", cmd || ""]);
+        Quickshell.execDetached([Quickshell.shellPath("scripts/evacore_bridge.py"), "launch_term", cwd || "", cmd || ""]);
         evaStatusProcess.running = true;
     }
 
     function runEvaSort(path) {
         root.evaSortFeedback = "EXECUTING DIRECTORY SORT...";
-        evaSortProcess.command = [Quickshell.configPath("scripts/evacore_bridge.py"), "sort_run", path || ""];
+        evaSortProcess.command = [Quickshell.shellPath("scripts/evacore_bridge.py"), "sort_run", path || ""];
         evaSortProcess.running = true;
     }
 
@@ -180,7 +180,7 @@ Item {
     }
 
     function restartQuickshell() {
-        Quickshell.execDetached([Quickshell.configPath("scripts/evacore_bridge.py"), "shell_restart"]);
+        Quickshell.execDetached([Quickshell.shellPath("scripts/evacore_bridge.py"), "shell_restart"]);
     }
 
     function downloadStreamWithEvaTube(url, format, dest) {
@@ -333,7 +333,7 @@ Item {
     function evalinkPurge() { evalinkRpcCall("purgeDownloadResult", [], function() { root.fetchEvalinkStatus(); }); }
 
     function evalinkStartDaemon() {
-        Quickshell.execDetached([Quickshell.configPath("scripts/evalink_bridge.py"), "start"]);
+        Quickshell.execDetached([Quickshell.shellPath("scripts/evalink_bridge.py"), "start"]);
         evalinkTimer.restart();
     }
 

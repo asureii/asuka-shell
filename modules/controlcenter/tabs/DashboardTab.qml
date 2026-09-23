@@ -177,7 +177,7 @@ Item {
 
     Process {
         id: weatherProcess
-        command: [Quickshell.configPath("scripts/weather_fetch.py")]
+        command: [Quickshell.shellPath("scripts/weather_fetch.py")]
         stdout: StdioCollector {
             onStreamFinished: {
                 root.weatherLoading = false;
@@ -191,8 +191,8 @@ Item {
 
     function refreshWeather(force) {
         root.weatherLoading = true;
-        weatherProcess.command = force ? [Quickshell.configPath("scripts/weather_fetch.py"), "--force"]
-                                       : [Quickshell.configPath("scripts/weather_fetch.py")];
+        weatherProcess.command = force ? [Quickshell.shellPath("scripts/weather_fetch.py"), "--force"]
+                                       : [Quickshell.shellPath("scripts/weather_fetch.py")];
         weatherProcess.running = true;
     }
 
@@ -211,7 +211,7 @@ Item {
 
     Process {
         id: notifStoreProcess
-        command: [Quickshell.configPath("scripts/notification_store.py"), "load"]
+        command: [Quickshell.shellPath("scripts/notification_store.py"), "load"]
         stdout: StdioCollector {
             onStreamFinished: {
                 root.notificationsLoading = false;
@@ -227,7 +227,7 @@ Item {
 
     function refreshNotifications() {
         root.notificationsLoading = true;
-        notifStoreProcess.command = [Quickshell.configPath("scripts/notification_store.py"), "load"];
+        notifStoreProcess.command = [Quickshell.shellPath("scripts/notification_store.py"), "load"];
         notifStoreProcess.running = true;
     }
 
@@ -240,12 +240,12 @@ Item {
 
     function clearAllNotifications() {
         root.storedNotifications = [];
-        Quickshell.execDetached([Quickshell.configPath("scripts/notification_store.py"), "clear"]);
+        Quickshell.execDetached([Quickshell.shellPath("scripts/notification_store.py"), "clear"]);
     }
 
     function removeNotification(id) {
         root.storedNotifications = root.storedNotifications.filter(function(n) { return n.id !== id; });
-        Quickshell.execDetached([Quickshell.configPath("scripts/notification_store.py"), "remove", id.toString()]);
+        Quickshell.execDetached([Quickshell.shellPath("scripts/notification_store.py"), "remove", id.toString()]);
     }
 
     Component.onCompleted: {

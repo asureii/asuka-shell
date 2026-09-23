@@ -57,7 +57,7 @@ QtObject {
     }
 
     property var vitalsProcess: Process {
-        command: [Quickshell.configPath("scripts/nerv_vitals")]
+        command: [Quickshell.shellPath("scripts/nerv_vitals")]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {

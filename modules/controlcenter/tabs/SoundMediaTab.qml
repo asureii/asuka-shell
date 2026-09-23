@@ -201,7 +201,7 @@ Item {
 
     Process {
         id: evatubeInfoProcess
-        command: [Quickshell.configPath("scripts/evatube_bridge.py"), "info", root.evatubeUrl]
+        command: [Quickshell.shellPath("scripts/evatube_bridge.py"), "info", root.evatubeUrl]
         stdout: StdioCollector {
             onStreamFinished: {
                 root.evatubeLoading = false;
@@ -224,7 +224,7 @@ Item {
 
     Process {
         id: evatubeDlProcess
-        command: [Quickshell.configPath("scripts/evatube_bridge.py"), "download", root.evatubeUrl, root.evatubeMode, root.evatubeQuality, root.evatubeEmbedThumb ? "true" : "false"]
+        command: [Quickshell.shellPath("scripts/evatube_bridge.py"), "download", root.evatubeUrl, root.evatubeMode, root.evatubeQuality, root.evatubeEmbedThumb ? "true" : "false"]
         stdout: StdioCollector {
             onStreamFinished: {
                 root.evatubeLoading = false;
@@ -247,7 +247,7 @@ Item {
         root.evatubeUrl = url.trim();
         root.evatubeLoading = true;
         root.evatubeStatus = "INSPECTING URL...";
-        evatubeInfoProcess.command = [Quickshell.configPath("scripts/evatube_bridge.py"), "info", root.evatubeUrl];
+        evatubeInfoProcess.command = [Quickshell.shellPath("scripts/evatube_bridge.py"), "info", root.evatubeUrl];
         evatubeInfoProcess.running = true;
     }
 
@@ -255,12 +255,12 @@ Item {
         if (!root.evatubeUrl || root.evatubeUrl.trim().length === 0) return;
         root.evatubeLoading = true;
         root.evatubeStatus = "DISPATCHING EXTRACTION...";
-        evatubeDlProcess.command = [Quickshell.configPath("scripts/evatube_bridge.py"), "download", root.evatubeUrl.trim(), root.evatubeMode, root.evatubeQuality, root.evatubeEmbedThumb ? "true" : "false"];
+        evatubeDlProcess.command = [Quickshell.shellPath("scripts/evatube_bridge.py"), "download", root.evatubeUrl.trim(), root.evatubeMode, root.evatubeQuality, root.evatubeEmbedThumb ? "true" : "false"];
         evatubeDlProcess.running = true;
     }
 
     function launchEvaFile(path) {
-        Quickshell.execDetached([Quickshell.configPath("scripts/evacore_bridge.py"), "launch_file", path || (Quickshell.env("HOME") + "/Downloads")]);
+        Quickshell.execDetached([Quickshell.shellPath("scripts/evacore_bridge.py"), "launch_file", path || (Quickshell.env("HOME") + "/Downloads")]);
     }
 
     // ============================================================

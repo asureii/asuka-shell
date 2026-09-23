@@ -15,9 +15,9 @@ QtObject {
     // Dynamic System Paths
     readonly property string homeDir: Quickshell.env("HOME") || "/home"
     readonly property string configDir: Quickshell.env("XDG_CONFIG_HOME") || (homeDir + "/.config")
-    readonly property string evangelionDir: Quickshell.configPath("")
-    readonly property string scriptsDir: Quickshell.configPath("scripts")
-    readonly property string assetsDir: Quickshell.configPath("assets")
+    readonly property string evangelionDir: Quickshell.shellPath("")
+    readonly property string scriptsDir: Quickshell.shellPath("scripts")
+    readonly property string assetsDir: Quickshell.shellPath("assets")
     readonly property string downloadsDir: homeDir + "/Downloads"
     readonly property string picturesDir: homeDir + "/Pictures"
 }

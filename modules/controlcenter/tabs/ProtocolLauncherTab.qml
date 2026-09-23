@@ -152,7 +152,7 @@ Item {
     // Dynamic C++ App Discovery Process
     Process {
         id: appScanner
-        command: [Quickshell.configPath("scripts/get_applications")]
+        command: [Quickshell.shellPath("scripts/get_applications")]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -1160,7 +1160,7 @@ Item {
                                 border.width: 1
                                 border.color: root.secondary
                                 Text { anchors.centerIn: parent; text: "󰈈 TOGGLE WATCHER"; color: esWatchMouse.containsMouse ? "#ffffff" : root.secondary; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                                MouseArea { id: esWatchMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Quickshell.execDetached(["python3", Quickshell.configPath("scripts/evacore_bridge.py"), "sort_toggle_daemon"]) }
+                                MouseArea { id: esWatchMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Quickshell.execDetached(["python3", Quickshell.shellPath("scripts/evacore_bridge.py"), "sort_toggle_daemon"]) }
                             }
                         }
 

@@ -86,7 +86,7 @@ Scope {
     // Query active client geometries for window snapping (supports Sway & Hyprland)
     Process {
         id: clientFetcher
-        command: ["python3", Quickshell.configPath("scripts/nerv_workspace_clients.py")]
+        command: ["python3", Quickshell.shellPath("scripts/nerv_workspace_clients.py")]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {

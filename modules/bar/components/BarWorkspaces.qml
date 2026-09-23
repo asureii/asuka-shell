@@ -234,7 +234,7 @@ RowLayout {
                                     activeWorkspacePopout.close();
                                 } else {
                                     if (wsId === root.currentWorkspaceId) {
-                                        Quickshell.execDetached([Quickshell.configPath("scripts/nerv_workspace_clients.py"), "--snapshot", "" + wsId]);
+                                        Quickshell.execDetached([Quickshell.shellPath("scripts/nerv_workspace_clients.py"), "--snapshot", "" + wsId]);
                                     }
                                     activeWorkspacePopout.openForWorkspace(wsId);
                                 }

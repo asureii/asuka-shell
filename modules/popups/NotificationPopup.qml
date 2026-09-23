@@ -70,7 +70,7 @@ PanelWindow {
             else if (notification.urgency === NotificationUrgency.Low) urgStr = "low";
 
             Quickshell.execDetached([
-                Quickshell.configPath("scripts/notification_store.py"),
+                Quickshell.shellPath("scripts/notification_store.py"),
                 "add",
                 "--app", (notification.appName || "SYSTEM").toString(),
                 "--summary", (notification.summary || "ALERT").toString(),

@@ -99,7 +99,7 @@ Item {
     // Live Query Process using compiled C++ binary
     Process {
         id: telemetryProcess
-        command: [Quickshell.configPath("scripts/nerv_vitals")]
+        command: [Quickshell.shellPath("scripts/nerv_vitals")]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {

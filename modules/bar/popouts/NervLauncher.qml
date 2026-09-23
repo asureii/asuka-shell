@@ -219,7 +219,7 @@ PanelWindow {
     // App Scanner Process
     Process {
         id: appScanner
-        command: [Quickshell.configPath("scripts/get_applications")]
+        command: [Quickshell.shellPath("scripts/get_applications")]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {

@@ -22,7 +22,7 @@ Scope {
     // Load saved wallpaper path on startup
     Process {
         id: loadProcess
-        command: ["sh", "-c", "cat '" + Quickshell.configPath("wallpaper.txt") + "' 2>/dev/null || true"]
+        command: ["sh", "-c", "cat '" + Quickshell.shellPath("wallpaper.txt") + "' 2>/dev/null || true"]
         stdout: StdioCollector {
             onStreamFinished: {
                 var saved = text.trim();
@@ -30,7 +30,7 @@ Scope {
                     if (saved.startsWith("~/")) {
                         saved = (Quickshell.env("HOME") || "") + saved.substring(1);
                     } else if (!saved.startsWith("/")) {
-                        saved = Quickshell.configPath(saved);
+                        saved = Quickshell.shellPath(saved);
                     }
                     root.wallpaperPath = saved;
                 }
@@ -49,7 +49,7 @@ Scope {
         root.wallpaperPath = cleanPath;
 
         // Save to config file for persistence
-        saveProcess.command = ["sh", "-c", "echo -n '" + cleanPath + "' > '" + Quickshell.configPath("wallpaper.txt") + "'"];
+        saveProcess.command = ["sh", "-c", "echo -n '" + cleanPath + "' > '" + Quickshell.shellPath("wallpaper.txt") + "'"];
         saveProcess.running = true;
     }
 

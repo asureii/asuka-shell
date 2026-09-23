@@ -159,7 +159,7 @@ PanelWindow {
     }
 
     function triggerSnapshot() {
-        Quickshell.execDetached([Quickshell.configPath("scripts/nerv_workspace_clients.py"), "--snapshot", "" + root.targetWorkspaceId]);
+        Quickshell.execDetached([Quickshell.shellPath("scripts/nerv_workspace_clients.py"), "--snapshot", "" + root.targetWorkspaceId]);
         snapshotDelayTimer.restart();
     }
 
@@ -236,7 +236,7 @@ PanelWindow {
     // Telemetry Poller Process
     Process {
         id: clientsProcess
-        command: [Quickshell.configPath("scripts/nerv_workspace_clients.py")]
+        command: [Quickshell.shellPath("scripts/nerv_workspace_clients.py")]
 
         stdout: SplitParser {
             onRead: data => {

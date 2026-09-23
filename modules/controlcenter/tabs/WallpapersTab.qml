@@ -45,14 +45,14 @@ Item {
     // Set display brightness process
     Process {
         id: brightnessSetter
-        command: [Quickshell.configPath("scripts/set_brightness.sh"), "100"]
+        command: [Quickshell.shellPath("scripts/set_brightness.sh"), "100"]
     }
 
     function setBrightness(pct) {
         pct = Math.max(0.01, Math.min(1.0, pct));
         root.displayBrightness = pct;
         var pctInt = Math.round(pct * 100);
-        brightnessSetter.command = [Quickshell.configPath("scripts/set_brightness.sh"), pctInt.toString()];
+        brightnessSetter.command = [Quickshell.shellPath("scripts/set_brightness.sh"), pctInt.toString()];
         brightnessSetter.running = true;
     }
 
@@ -62,7 +62,7 @@ Item {
     // Read current saved wallpaper
     Process {
         id: readSavedProcess
-        command: ["sh", "-c", "cat '" + Quickshell.configPath("wallpaper.txt") + "' 2>/dev/null || true"]
+        command: ["sh", "-c", "cat '" + Quickshell.shellPath("wallpaper.txt") + "' 2>/dev/null || true"]
         stdout: StdioCollector {
             onStreamFinished: {
                 var p = text.trim();
@@ -70,7 +70,7 @@ Item {
                     if (p.startsWith("~/")) {
                         p = (Quickshell.env("HOME") || "") + p.substring(1);
                     } else if (!p.startsWith("/")) {
-                        p = Quickshell.configPath(p);
+                        p = Quickshell.shellPath(p);
                     }
                     root.activePath = p;
                     root.activeName = p.split("/").pop();
@@ -104,14 +104,14 @@ Item {
         root.activePath = path;
         root.activeName = name || path.split("/").pop();
 
-        setWallProcess.command = ["sh", "-c", "echo -n '" + path + "' > '" + Quickshell.configPath("wallpaper.txt") + "'; quickshell -p '" + Quickshell.configPath("") + "' ipc call background setWallpaper '" + path + "' 2>/dev/null || true"];
+        setWallProcess.command = ["sh", "-c", "echo -n '" + path + "' > '" + Quickshell.shellPath("wallpaper.txt") + "'; quickshell -p '" + Quickshell.shellPath("") + "' ipc call background setWallpaper '" + path + "' 2>/dev/null || true"];
         setWallProcess.running = true;
     }
 
     function setNightLight(enabled) {
         root.nightLightOn = enabled;
         var temp = Math.round(root.colorTemp);
-        nightLightProcess.command = [Quickshell.configPath("scripts/set_hyprsunset.sh"), enabled ? temp.toString() : "off"];
+        nightLightProcess.command = [Quickshell.shellPath("scripts/set_hyprsunset.sh"), enabled ? temp.toString() : "off"];
         nightLightProcess.running = true;
     }
 
@@ -120,14 +120,14 @@ Item {
         root.colorTempSlider = pct;
         root.colorTemp = Math.round(2500 + pct * 4000);
         if (root.nightLightOn) {
-            nightLightProcess.command = [Quickshell.configPath("scripts/set_hyprsunset.sh"), root.colorTemp.toString()];
+            nightLightProcess.command = [Quickshell.shellPath("scripts/set_hyprsunset.sh"), root.colorTemp.toString()];
             nightLightProcess.running = true;
         }
     }
 
     Process {
         id: nightLightProcess
-        command: [Quickshell.configPath("scripts/set_hyprsunset.sh"), "off"]
+        command: [Quickshell.shellPath("scripts/set_hyprsunset.sh"), "off"]
     }
 
     Process {

@@ -125,7 +125,7 @@ echo \"{\\\"tasks\\\":$tasks,\\\"cpu\\\":$cpu_tot,\\\"procs\\\":$procs}\"
         root.isDeliberating = true;
         magiDeliberateProcess.command = [
             "python3",
-            Quickshell.configPath("scripts/magi_deliberate.py"),
+            Quickshell.shellPath("scripts/magi_deliberate.py"),
             "--type", "process",
             "--name", procName || "unknown",
             "--pid", pid || "0"
@@ -137,7 +137,7 @@ echo \"{\\\"tasks\\\":$tasks,\\\"cpu\\\":$cpu_tot,\\\"procs\\\":$procs}\"
         root.isDeliberating = true;
         magiDeliberateProcess.command = [
             "python3",
-            Quickshell.configPath("scripts/magi_deliberate.py"),
+            Quickshell.shellPath("scripts/magi_deliberate.py"),
             "--query", queryText
         ];
         magiDeliberateProcess.running = true;
@@ -145,7 +145,7 @@ echo \"{\\\"tasks\\\":$tasks,\\\"cpu\\\":$cpu_tot,\\\"procs\\\":$procs}\"
 
     Process {
         id: magiDeliberateProcess
-        command: ["python3", Quickshell.configPath("scripts/magi_deliberate.py")]
+        command: ["python3", Quickshell.shellPath("scripts/magi_deliberate.py")]
         stdout: StdioCollector {
             onStreamFinished: {
                 root.isDeliberating = false;
@@ -194,13 +194,13 @@ echo \"{\\\"tasks\\\":$tasks,\\\"cpu\\\":$cpu_tot,\\\"procs\\\":$procs}\"
         // Also trigger deliberation on the query
         root.deliberateQuery(cmdText);
 
-        magiCmdProcess.command = [Quickshell.configPath("scripts/evacore_bridge.py"), "command", cmdText];
+        magiCmdProcess.command = [Quickshell.shellPath("scripts/evacore_bridge.py"), "command", cmdText];
         magiCmdProcess.running = true;
     }
 
     Process {
         id: magiCmdProcess
-        command: [Quickshell.configPath("scripts/evacore_bridge.py"), "command", "status"]
+        command: [Quickshell.shellPath("scripts/evacore_bridge.py"), "command", "status"]
         stdout: StdioCollector {
             onStreamFinished: {
                 root.magiBusy = false;

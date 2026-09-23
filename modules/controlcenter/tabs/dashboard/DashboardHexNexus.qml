@@ -518,7 +518,7 @@ Item {
                         id: avatarImg
                         anchors.fill: parent
                         anchors.margins: 3
-                        source: "file://" + Quickshell.configPath("assets/asukapfp.jpg")
+                        source: "file://" + Quickshell.shellPath("assets/asukapfp.jpg")
                         fillMode: Image.PreserveAspectCrop
                         visible: false
                     }
