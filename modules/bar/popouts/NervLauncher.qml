@@ -41,11 +41,11 @@ PanelWindow {
 
     margins {
         top: 46
-        left: (root.screen ? Math.max(20, Math.round((root.screen.width - 1280) / 2) + 48) : 91)
+        left: (root.screen ? Math.round((root.screen.width - root.implicitWidth) / 2) : 0)
     }
 
     readonly property real cardHeight: 560
-    implicitWidth: 440
+    implicitWidth: 500
     implicitHeight: Math.round(root.cardHeight * 1.06)
 
     mask: Region {
@@ -67,6 +67,7 @@ PanelWindow {
         onFinished: {
             root.revealProgress = 1.0;
             root.beamOpacity = 0.0;
+            root.refreshApps();
         }
         NumberAnimation {
             id: openProgressAnim
@@ -74,12 +75,11 @@ PanelWindow {
             property: "revealProgress"
             from: 0.0
             to: 1.0
-            duration: 320
-            easing.type: Easing.OutBack
-            easing.overshoot: 1.165
+            duration: 260
+            easing.type: Easing.OutCubic
         }
         SequentialAnimation {
-            PauseAnimation { duration: 220 }
+            PauseAnimation { duration: 160 }
             NumberAnimation {
                 target: root
                 property: "beamOpacity"
@@ -129,6 +129,7 @@ PanelWindow {
         openProgressAnim.from = root.revealProgress;
         closeAnim.stop();
         openAnim.restart();
+        searchInput.forceActiveFocus();
     }
 
     function close() {
@@ -148,8 +149,15 @@ PanelWindow {
         appScanner.running = true;
     }
 
+    function setSearchQuery(text) {
+        root.filterQuery = text;
+        searchInput.text = text;
+        root.updateFilteredApps();
+    }
+
     function launchApp(app) {
         if (!app || !app.exec) return;
+        NervAppSearch.incrementFrequency(app.id);
         Quickshell.execDetached(["bash", "-c", app.exec + " &"]);
         root.close();
     }
@@ -161,51 +169,19 @@ PanelWindow {
     }
 
     function updateFilteredApps() {
-        var query = root.filterQuery.trim().toLowerCase();
-        var cat = root.selectedCategory.toUpperCase();
-        var list = [];
-
-        for (var i = 0; i < root.allApps.length; i++) {
-            var app = root.allApps[i];
-
-            // Category match
-            var catMatch = (cat === "ALL");
-            if (!catMatch) {
-                if (cat === "EVA SUITE" || cat === "EVA") {
-                    if (app.name.toUpperCase().indexOf("EVA") !== -1 ||
-                        app.id.toUpperCase().indexOf("EVA") !== -1 ||
-                        (app.categories && (app.categories.toUpperCase().indexOf("EVA") !== -1 || app.categories.toUpperCase().indexOf("X-EVA") !== -1)) ||
-                        (app.keywords && app.keywords.toUpperCase().indexOf("EVA") !== -1)) {
-                        catMatch = true;
-                    }
-                } else if (app.categories) {
-                    var appCats = app.categories.toUpperCase();
-                    if (cat === "SYSTEM" && (appCats.indexOf("SYSTEM") !== -1 || appCats.indexOf("SETTINGS") !== -1 || appCats.indexOf("MONITOR") !== -1 || appCats.indexOf("TERMINAL") !== -1)) catMatch = true;
-                    else if (cat === "NETWORK" && (appCats.indexOf("NETWORK") !== -1 || appCats.indexOf("WEBBROWSER") !== -1 || appCats.indexOf("FILETRANSFER") !== -1)) catMatch = true;
-                    else if (cat === "DEV" && (appCats.indexOf("DEVELOPMENT") !== -1 || appCats.indexOf("BUILDING") !== -1 || appCats.indexOf("IDE") !== -1 || appCats.indexOf("TEXTEDITOR") !== -1)) catMatch = true;
-                    else if (cat === "UTILITY" && (appCats.indexOf("UTILITY") !== -1 || appCats.indexOf("FILETOOLS") !== -1 || appCats.indexOf("FILEMANAGER") !== -1)) catMatch = true;
-                    else if (cat === "MEDIA" && (appCats.indexOf("AUDIO") !== -1 || appCats.indexOf("VIDEO") !== -1 || appCats.indexOf("GRAPHICS") !== -1 || appCats.indexOf("VIEWER") !== -1)) catMatch = true;
-                }
-            }
-
-            if (!catMatch) continue;
-
-            // Search query match
-            if (query) {
-                var nameMatch = app.name.toLowerCase().indexOf(query) !== -1;
-                var execMatch = app.exec.toLowerCase().indexOf(query) !== -1;
-                var commentMatch = app.comment && app.comment.toLowerCase().indexOf(query) !== -1;
-                var genMatch = app.genericName && app.genericName.toLowerCase().indexOf(query) !== -1;
-                var keyMatch = app.keywords && app.keywords.toLowerCase().indexOf(query) !== -1;
-                var catStrMatch = app.categories && app.categories.toLowerCase().indexOf(query) !== -1;
-                if (!nameMatch && !execMatch && !commentMatch && !genMatch && !keyMatch && !catStrMatch) continue;
-            }
-
-            list.push(app);
-        }
-
-        root.filteredApps = list;
+        root.filteredApps = NervAppSearch.search(root.filterQuery, root.allApps, root.selectedCategory);
         root.selectedIndex = 0;
+    }
+
+    Connections {
+        target: NervAppSearch
+        function onFrequenciesChanged() {
+            root.updateFilteredApps();
+        }
+    }
+
+    Component.onCompleted: {
+        root.refreshApps();
     }
 
     onVisibleChanged: {
@@ -213,7 +189,7 @@ PanelWindow {
             root.filterQuery = "";
             root.selectedCategory = "ALL";
             searchInput.text = "";
-            root.refreshApps();
+            root.updateFilteredApps();
             searchInput.forceActiveFocus();
         }
     }
@@ -241,6 +217,8 @@ PanelWindow {
         width: parent.width
         height: Math.round(root.revealProgress * root.cardHeight)
         clip: true
+        layer.enabled: openAnim.running || closeAnim.running
+        layer.smooth: true
 
         Item {
             id: animContent
@@ -248,151 +226,270 @@ PanelWindow {
             height: root.cardHeight
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            transform: Scale {
-                origin.x: animContent.width / 2
-                origin.y: 0
-                yScale: Math.max(1.0, root.revealProgress)
-            }
 
-            // Tactical Chamfered Frame Canvas (Cut Top-Right & Bottom-Left)
+            // Tactical Chamfered Frame Canvas with Trapezoid Cutout for Top Bar Pod
             Canvas {
                 id: frameCanvas
-            anchors.fill: parent
-            renderTarget: Canvas.FramebufferObject
+                anchors.fill: parent
+                renderTarget: Canvas.Image
+                renderStrategy: Canvas.Immediate
 
-            property real chamfer: 8
-            property real strokeWidth: 2
+                property real chamfer: 8
+                property real strokeWidth: 2
 
-            onPaint: {
-                var ctx = getContext("2d");
-                ctx.clearRect(0, 0, width, height);
-                var w = width;
-                var h = height;
-                var c = chamfer;
-                var sw = strokeWidth;
-                var p = sw / 2;
+                // Trapezoid Cutout Geometry
+                // Mirrors center pod in BarBackground (centerMidWidth=260, centerBottomWidth=190, depth 41px)
+                // With uniform ~7.4px lateral clearance and 5px bottom clearance
+                property real cutoutTopW: 268
+                property real cutoutBotW: 196
+                property real cutoutDepth: 42
 
-                // 1. Solid Background Fill
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(w - c, 0);
-                ctx.lineTo(w, c);
-                ctx.lineTo(w, h);
-                ctx.lineTo(c, h);
-                ctx.lineTo(0, h - c);
-                ctx.closePath();
+                // Bottom Trapezoid Base Geometry
+                property real botSlopeW: 46
+                property real botSlopeH: 36
 
-                ctx.fillStyle = root.bg;
-                ctx.fill();
+                onPaint: {
+                    var ctx = getContext("2d");
+                    ctx.clearRect(0, 0, width, height);
+                    var w = width;
+                    var h = height;
+                    var cx = w / 2;
+                    var c = chamfer;
+                    var sw = strokeWidth;
+                    var p = sw / 2;
 
-                // 2. Tactical Grid Pattern
-                ctx.save();
-                ctx.clip();
-                ctx.strokeStyle = Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.06);
-                ctx.lineWidth = 1;
-                for (var gy = 10; gy < h; gy += 10) {
-                    ctx.beginPath();
-                    ctx.moveTo(0, gy);
-                    ctx.lineTo(w, gy);
-                    ctx.stroke();
-                }
-                for (var gx = 10; gx < w; gx += 10) {
-                    ctx.beginPath();
-                    ctx.moveTo(gx, 0);
-                    ctx.lineTo(gx, h);
-                    ctx.stroke();
-                }
-                ctx.restore();
+                    var cth = cutoutTopW / 2;
+                    var cbh = cutoutBotW / 2;
+                    var cd = cutoutDepth;
+                    var bsw = botSlopeW;
+                    var bsh = botSlopeH;
 
-                // 3. Clear Inset Crimson Outer Border (2px, No Edge Clipping)
-                ctx.beginPath();
-                ctx.moveTo(p, p);
-                ctx.lineTo(w - c - p * 0.4, p);
-                ctx.lineTo(w - p, c + p * 0.4);
-                ctx.lineTo(w - p, h - p);
-                ctx.lineTo(c + p * 0.4, h - p);
-                ctx.lineTo(p, h - c - p * 0.4);
-                ctx.closePath();
-
-                ctx.strokeStyle = root.primary;
-                ctx.lineWidth = sw;
-                ctx.stroke();
-            }
-
-            onWidthChanged: requestPaint()
-            onHeightChanged: requestPaint()
-        }
-
-        // Inner Main Layout
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 10
-            spacing: 8
-
-            // 1. TACTICAL HEADER ROW
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 22
-                spacing: 6
-
-                Rectangle {
-                    width: 4
-                    height: 14
-                    color: root.primary
-                }
-
-                Text {
-                    text: NervSettings.hudBranding
-                    color: root.primary
-                    font.family: root.hudFont
-                    font.pixelSize: 11
-                    font.bold: true
-                    font.letterSpacing: 1.5
-                }
-
-                Text {
-                    text: "// PROTOCOL DISPATCH"
-                    color: root.textDim
-                    font.family: root.hudFont
-                    font.pixelSize: 8
-                    font.bold: true
-                }
-
-                Item { Layout.fillWidth: true }
-
-                // Close Button [ESC]
-                Rectangle {
-                    Layout.preferredWidth: 46
-                    Layout.preferredHeight: 18
-                    color: closeMouse.containsMouse ? root.primary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.08)
-                    border.width: 1
-                    border.color: root.primary
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "ESC ✕"
-                        color: closeMouse.containsMouse ? "#ffffff" : root.primary
-                        font.family: root.hudFont
-                        font.pixelSize: 8
-                        font.bold: true
+                    function buildPath(offset) {
+                        ctx.beginPath();
+                        // 1. Top-left shoulder chamfer
+                        ctx.moveTo(c + offset * 0.4, offset);
+                        // 2. Left shoulder to cutout
+                        ctx.lineTo(cx - cth - offset * 0.3, offset);
+                        // 3. Cutout left slope (down-inward)
+                        ctx.lineTo(cx - cbh - offset * 0.3, cd + offset);
+                        // 4. Cutout bottom horizontal edge
+                        ctx.lineTo(cx + cbh + offset * 0.3, cd + offset);
+                        // 5. Cutout right slope (up-outward)
+                        ctx.lineTo(cx + cth + offset * 0.3, offset);
+                        // 6. Right shoulder
+                        ctx.lineTo(w - c - offset * 0.4, offset);
+                        // 7. Top-right chamfer
+                        ctx.lineTo(w - offset, c + offset * 0.4);
+                        // 8. Right vertical edge down to bottom slope
+                        ctx.lineTo(w - offset, h - bsh - offset * 0.3);
+                        // 9. Bottom-right trapezoid slope (down-inward)
+                        ctx.lineTo(w - bsw - offset * 0.3, h - offset);
+                        // 10. Bottom horizontal base
+                        ctx.lineTo(bsw + offset * 0.3, h - offset);
+                        // 11. Bottom-left trapezoid slope (up-outward)
+                        ctx.lineTo(offset, h - bsh - offset * 0.3);
+                        // 12. Left vertical edge up to top-left chamfer
+                        ctx.lineTo(offset, c + offset * 0.4);
+                        ctx.closePath();
                     }
 
-                    MouseArea {
-                        id: closeMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.close()
+                    // 1. Solid Background Fill
+                    buildPath(0);
+                    ctx.fillStyle = root.bg;
+                    ctx.fill();
+
+                    // 2. Tactical Grid Pattern (clipped strictly within polygon)
+                    ctx.save();
+                    buildPath(0);
+                    ctx.clip();
+                    ctx.strokeStyle = Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.06);
+                    ctx.lineWidth = 1;
+                    for (var gy = 10; gy < h; gy += 10) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, gy);
+                        ctx.lineTo(w, gy);
+                        ctx.stroke();
+                    }
+                    for (var gx = 10; gx < w; gx += 10) {
+                        ctx.beginPath();
+                        ctx.moveTo(gx, 0);
+                        ctx.lineTo(gx, h);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+
+                    // 3. Clear Inset Crimson Outer Border (2px, No Edge Clipping)
+                    ctx.save();
+                    buildPath(p);
+                    ctx.strokeStyle = root.primary;
+                    ctx.lineWidth = sw;
+                    ctx.lineJoin = "miter";
+                    ctx.miterLimit = 4;
+                    ctx.stroke();
+                    ctx.restore();
+
+                    // 4. Tactical Shoulder & Notch Corner Accent Marks
+                    ctx.save();
+                    ctx.strokeStyle = root.primary;
+                    ctx.lineWidth = 1.5;
+
+                    // Left shoulder notch corner tick
+                    ctx.beginPath();
+                    ctx.moveTo(cx - cth - 10, p);
+                    ctx.lineTo(cx - cth, p);
+                    ctx.stroke();
+
+                    // Right shoulder notch corner tick
+                    ctx.beginPath();
+                    ctx.moveTo(cx + cth, p);
+                    ctx.lineTo(cx + cth + 10, p);
+                    ctx.stroke();
+
+                    // Bottom notch corner ticks
+                    ctx.beginPath();
+                    ctx.moveTo(cx - cbh, cd + p);
+                    ctx.lineTo(cx - cbh + 8, cd + p);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.moveTo(cx + cbh - 8, cd + p);
+                    ctx.lineTo(cx + cbh, cd + p);
+                    ctx.stroke();
+
+                    // Bottom Trapezoid Left & Right Transition Ticks
+                    ctx.beginPath();
+                    ctx.moveTo(p, h - bsh);
+                    ctx.lineTo(p + 8, h - bsh);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.moveTo(w - p - 8, h - bsh);
+                    ctx.lineTo(w - p, h - bsh);
+                    ctx.stroke();
+
+                    // Bottom Base Horizontal Notch Ticks
+                    ctx.beginPath();
+                    ctx.moveTo(bsw, h - p);
+                    ctx.lineTo(bsw + 8, h - p);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.moveTo(w - bsw - 8, h - p);
+                    ctx.lineTo(w - bsw, h - p);
+                    ctx.stroke();
+
+                    ctx.restore();
+                }
+
+                onWidthChanged: requestPaint()
+                onHeightChanged: requestPaint()
+            }
+
+            // Left Shoulder Tactical Header
+            Item {
+                x: 12
+                y: 6
+                width: Math.max(60, (parent.width / 2) - (frameCanvas.cutoutTopW / 2) - 18)
+                height: 32
+
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: 5
+
+                    Rectangle {
+                        width: 3
+                        height: 16
+                        color: root.primary
+                    }
+
+                    ColumnLayout {
+                        spacing: 0
+                        Layout.alignment: Qt.AlignVCenter
+
+                        Text {
+                            text: NervSettings.hudBranding
+                            color: root.primary
+                            font.family: root.hudFont
+                            font.pixelSize: 10
+                            font.bold: true
+                            font.letterSpacing: 1.2
+                        }
+
+                        Text {
+                            text: "// DISPATCH"
+                            color: root.textDim
+                            font.family: root.hudFont
+                            font.pixelSize: 8
+                            font.bold: true
+                            font.letterSpacing: 0.6
+                        }
                     }
                 }
             }
 
-            // Header Separator Line
+            // Right Shoulder Close Button [ESC]
+            Item {
+                x: (parent.width / 2) + (frameCanvas.cutoutTopW / 2) + 6
+                y: 6
+                width: Math.max(60, parent.width - x - 12)
+                height: 32
+
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: 4
+
+                    Item { Layout.fillWidth: true }
+
+                    Rectangle {
+                        Layout.preferredWidth: 48
+                        Layout.preferredHeight: 20
+                        color: closeMouse.containsMouse ? root.primary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.08)
+                        border.width: 1
+                        border.color: root.primary
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "ESC ✕"
+                            color: closeMouse.containsMouse ? "#ffffff" : root.primary
+                            font.family: root.hudFont
+                            font.pixelSize: 8
+                            font.bold: true
+                        }
+
+                        MouseArea {
+                            id: closeMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.close()
+                        }
+                    }
+                }
+            }
+
+            // Sub-cutout tactical separator line
             Rectangle {
-                Layout.fillWidth: true
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                anchors.topMargin: 48
                 height: 1
                 color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.35)
             }
+
+            // Inner Main Layout (Sits cleanly below the trapezoid cutout)
+            ColumnLayout {
+                anchors.top: parent.top
+                anchors.topMargin: 56
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 10
+                anchors.left: parent.left
+                anchors.leftMargin: 10
+                anchors.right: parent.right
+                anchors.rightMargin: 10
+                spacing: 8
 
             // 2. SEARCH INPUT BOX
             Rectangle {
@@ -556,31 +653,17 @@ PanelWindow {
                     boundsBehavior: Flickable.DragOverBounds
 
                     delegate: Rectangle {
-                        id: cascadeDelegate
+                        id: appDelegate
                         width: appListView.width
                         height: 34
                         color: (index === root.selectedIndex) ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.14) : (itemMouse.containsMouse ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.06) : "transparent")
                         border.width: (index === root.selectedIndex) ? 1 : 0
                         border.color: root.primary
 
-                        // Orchestrated Staggered Cascade Entrance
-                        opacity: 0.0
-                        transform: Translate { id: transX; x: -14 }
-                        Component.onCompleted: cascadeAnim.start()
-
-                        SequentialAnimation {
-                            id: cascadeAnim
-                            PauseAnimation { duration: Math.min(index * 25, 250) }
-                            ParallelAnimation {
-                                NumberAnimation { target: cascadeDelegate; property: "opacity"; to: 1.0; duration: 200; easing.type: Easing.OutQuad }
-                                NumberAnimation { target: transX; property: "x"; to: 0; duration: 240; easing.type: Easing.OutCubic }
-                            }
-                        }
-
                         // Tactile Spring Scale
                         scale: itemMouse.pressed ? 0.98 : (itemMouse.containsMouse ? 1.015 : 1.0)
                         Behavior on scale {
-                            NumberAnimation { duration: 150; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
+                            NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
                         }
 
                         // Top Specular Highlight Edge on Selected
@@ -721,6 +804,8 @@ PanelWindow {
                 Layout.preferredHeight: 26
                 Layout.minimumHeight: 26
                 Layout.maximumHeight: 26
+                Layout.leftMargin: 36
+                Layout.rightMargin: 36
                 spacing: 6
 
                 // LOG OUT BUTTON

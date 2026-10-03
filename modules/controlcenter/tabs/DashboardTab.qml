@@ -9,15 +9,9 @@ Item {
     id: root
 
     readonly property color primary: "#cc0000"
-    readonly property color secondary: "#cc0000"
     readonly property color highlight: "#ff2222"
-    readonly property color fg: "#1a0000"
-    readonly property color fgMuted: Qt.rgba(0.1, 0.0, 0.0, 0.70)
-    readonly property color fgDim: Qt.rgba(0.1, 0.0, 0.0, 0.45)
-    readonly property color panelBg: Qt.rgba(0.98, 0.98, 0.98, 0.94)
-    readonly property color itemBg: Qt.rgba(1.0, 1.0, 1.0, 0.85)
-    readonly property color itemBorder: Qt.rgba(0.8, 0.0, 0.0, 0.35)
-    readonly property string hudFont: "Liberation Sans, JetBrainsMono Nerd Font"
+
+    anchors.fill: parent
 
     // ============================================================
     // 1. CLOCK & TIMEZONE BACKEND
@@ -36,115 +30,101 @@ Item {
         }
     }
 
-    function formatDigits(n) {
-        return (n < 10 ? "0" : "") + n;
-    }
+    function pad2(n) { return (n < 10 ? "0" : "") + n; }
 
-    // Time calculations
-    readonly property string localHours: formatDigits(currentTime.getHours())
-    readonly property string localMinutes: formatDigits(currentTime.getMinutes())
-    readonly property string localSeconds: formatDigits(currentTime.getSeconds())
-
-    readonly property string dateBanner: {
-        var days = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
-        var months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
-        return days[currentTime.getDay()] + " // " + currentTime.getDate() + " " + months[currentTime.getMonth()] + " " + currentTime.getFullYear();
-    }
-
-    // Secondary Timezones
-    readonly property string tokyoTime: {
-        var utcMs = currentTime.getTime() + (currentTime.getTimezoneOffset() * 60000);
-        var tokyoDate = new Date(utcMs + (3600000 * 9)); // JST = UTC+9
-        return formatDigits(tokyoDate.getHours()) + ":" + formatDigits(tokyoDate.getMinutes()) + ":" + formatDigits(tokyoDate.getSeconds());
-    }
-
-    readonly property string utcTime: {
-        var utcMs = currentTime.getTime() + (currentTime.getTimezoneOffset() * 60000);
-        var utcDate = new Date(utcMs);
-        return formatDigits(utcDate.getHours()) + ":" + formatDigits(utcDate.getMinutes()) + ":" + formatDigits(utcDate.getSeconds());
-    }
-
-    readonly property int dayOfYear: {
-        var start = new Date(currentTime.getFullYear(), 0, 0);
-        var diff = currentTime - start;
-        var oneDay = 1000 * 60 * 60 * 24;
-        return Math.floor(diff / oneDay);
-    }
-
-    // ============================================================
-    // 2. CALENDAR ENGINE
-    // ============================================================
-    property int viewYear: currentTime.getFullYear()
-    property int viewMonth: currentTime.getMonth() // 0-11
-    property int selectedDay: currentTime.getDate()
-
+    readonly property var dayNames: ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]
     readonly property var monthNames: ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"]
 
-    function nextMonth() {
-        if (root.viewMonth === 11) {
-            root.viewMonth = 0;
-            root.viewYear++;
-        } else {
-            root.viewMonth++;
-        }
+    readonly property string localHours: pad2(currentTime.getHours())
+    readonly property string localMinutes: pad2(currentTime.getMinutes())
+    readonly property string localSeconds: pad2(currentTime.getSeconds())
+
+    readonly property string dateBanner: dayNames[currentTime.getDay()] + " // " + currentTime.getDate() + " "
+                                         + monthNames[currentTime.getMonth()] + " " + currentTime.getFullYear()
+
+    function zoneTime(offsetHours) {
+        var utcMs = currentTime.getTime() + currentTime.getTimezoneOffset() * 60000;
+        var d = new Date(utcMs + offsetHours * 3600000);
+        return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    }
+    readonly property string tokyoTime: zoneTime(9)
+    readonly property string utcTime: zoneTime(0)
+
+    function dayOfYearFor(d) {
+        var start = new Date(d.getFullYear(), 0, 1);
+        var a = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+        var b = Date.UTC(start.getFullYear(), 0, 1);
+        return Math.floor((a - b) / 86400000) + 1;
+    }
+    function daysInYearFor(y) { return ((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0) ? 366 : 365; }
+    function isoWeekFor(d) {
+        var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        var dayNum = t.getUTCDay() || 7;
+        t.setUTCDate(t.getUTCDate() + 4 - dayNum);
+        var yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+        return Math.ceil(((t - yearStart) / 86400000 + 1) / 7);
     }
 
-    function prevMonth() {
-        if (root.viewMonth === 0) {
-            root.viewMonth = 11;
-            root.viewYear--;
-        } else {
-            root.viewMonth--;
-        }
+    readonly property int dayOfYear: dayOfYearFor(currentTime)
+    readonly property int daysInYear: daysInYearFor(currentTime.getFullYear())
+
+    // ============================================================
+    // 2. CALENDAR ENGINE (full date selection, not just day number)
+    // ============================================================
+    property int viewYear: currentTime.getFullYear()
+    property int viewMonth: currentTime.getMonth()
+    property var selectedDate: new Date()
+
+    function shiftMonth(delta) {
+        var m = root.viewMonth + delta;
+        root.viewYear += Math.floor(m / 12);
+        root.viewMonth = ((m % 12) + 12) % 12;
     }
 
     function resetToToday() {
         var now = new Date();
         root.viewYear = now.getFullYear();
         root.viewMonth = now.getMonth();
-        root.selectedDay = now.getDate();
+        root.selectedDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     }
 
-    // 42 cells (6 rows x 7 cols, starting Monday)
+    function selectDate(y, m, d) {
+        root.selectedDate = new Date(y, m, d);
+        if (y !== root.viewYear || m !== root.viewMonth) {
+            root.viewYear = y;
+            root.viewMonth = m;
+        }
+    }
+
+    function shiftSelection(days) {
+        var s = root.selectedDate;
+        var n = new Date(s.getFullYear(), s.getMonth(), s.getDate() + days);
+        selectDate(n.getFullYear(), n.getMonth(), n.getDate());
+    }
+
+    // Changes once per day; string bindings only notify on actual change
+    readonly property string todayStamp: currentTime.toDateString()
+    property var todayDate: new Date()
+    onTodayStampChanged: todayDate = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate())
+
+    // 42 cells (6 rows x 7 cols, Monday-first)
     readonly property var calendarGridDays: {
         var y = root.viewYear;
         var m = root.viewMonth;
-        var firstDayOfWeek = new Date(y, m, 1).getDay(); // 0 = Sun
-        var startOffset = (firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1); // 0 = Mon
-        var totalDaysInMonth = new Date(y, m + 1, 0).getDate();
-        var prevMonthDays = new Date(y, m, 0).getDate();
-
-        var today = new Date();
-        var isCurrentMonthView = (today.getFullYear() === y && today.getMonth() === m);
-        var todayDate = today.getDate();
-
+        var first = new Date(y, m, 1);
+        var startOffset = (first.getDay() + 6) % 7;
+        var today = root.todayDate;
         var list = [];
-        // Previous month days
-        for (var p = startOffset - 1; p >= 0; p--) {
+        for (var i = 0; i < 42; i++) {
+            var d = new Date(y, m, 1 - startOffset + i);
             list.push({
-                day: prevMonthDays - p,
-                isCurrentMonth: false,
-                isToday: false,
-                fullDate: (m === 0 ? (y - 1) : y) + "-" + (m === 0 ? 12 : m) + "-" + (prevMonthDays - p)
-            });
-        }
-        // Current month days
-        for (var c = 1; c <= totalDaysInMonth; c++) {
-            list.push({
-                day: c,
-                isCurrentMonth: true,
-                isToday: isCurrentMonthView && (c === todayDate),
-                fullDate: y + "-" + (m + 1 < 10 ? "0" : "") + (m + 1) + "-" + (c < 10 ? "0" : "") + c
-            });
-        }
-        // Future month days to fill 42 cells
-        var remaining = 42 - list.length;
-        for (var f = 1; f <= remaining; f++) {
-            list.push({
-                day: f,
-                isCurrentMonth: false,
-                isToday: false,
-                fullDate: (m === 11 ? (y + 1) : y) + "-" + (m === 11 ? "01" : (m + 2 < 10 ? "0" : "") + (m + 2)) + "-" + (f < 10 ? "0" : "") + f
+                year: d.getFullYear(),
+                month: d.getMonth(),
+                day: d.getDate(),
+                weekday: (d.getDay() + 6) % 7, // 0 = Mon
+                isCurrentMonth: d.getMonth() === m,
+                isToday: d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate(),
+                week: (i % 7 === 0) ? root.isoWeekFor(d) : 0
             });
         }
         return list;
@@ -153,31 +133,11 @@ Item {
     // ============================================================
     // 3. WEATHER BACKEND
     // ============================================================
-    property var weatherData: ({
-        sector: "TOKYO-3 // GEO-FRONT",
-        temp: 28,
-        feels_like: 31,
-        humidity: 65,
-        wind_speed: 12,
-        wind_dir: "NE",
-        precipitation: 0.0,
-        pressure: 1012,
-        condition: "ATMOSPHERE NOMINAL",
-        icon: "󰖙",
-        updated: "--:--:--",
-        forecast: [
-            { day: "FRI", max: 32, min: 25, icon: "󰖕", desc: "PARTLY CLOUDY" },
-            { day: "SAT", max: 33, min: 25, icon: "󰖙", desc: "CLEAR SKY" },
-            { day: "SUN", max: 31, min: 24, icon: "󰖖", desc: "LIGHT RAIN" },
-            { day: "MON", max: 34, min: 26, icon: "󰖙", desc: "CLEAR SKY" },
-            { day: "TUE", max: 32, min: 25, icon: "󰖐", desc: "OVERCAST" }
-        ]
-    })
+    property var weatherData: ({})
     property bool weatherLoading: false
 
     Process {
         id: weatherProcess
-        command: [Quickshell.shellPath("scripts/weather_fetch.py")]
         stdout: StdioCollector {
             onStreamFinished: {
                 root.weatherLoading = false;
@@ -190,24 +150,36 @@ Item {
     }
 
     function refreshWeather(force) {
+        if (weatherProcess.running) return;
         root.weatherLoading = true;
         weatherProcess.command = force ? [Quickshell.shellPath("scripts/weather_fetch.py"), "--force"]
                                        : [Quickshell.shellPath("scripts/weather_fetch.py")];
         weatherProcess.running = true;
     }
 
+    // Script caches for 15 min, so cheap re-reads keep the panel fresh while open
     Timer {
-        interval: 900000 // 15 mins
-        running: true
+        interval: 300000
+        running: root.visible
         repeat: true
         onTriggered: root.refreshWeather(false)
     }
 
     // ============================================================
-    // 4. NOTIFICATION FEED ENGINE & PERSISTENT STORE
+    // 4. NOTIFICATION STORE
     // ============================================================
     property var storedNotifications: []
     property bool notificationsLoading: false
+    property string notifSignature: ""
+
+    function signatureOf(list) {
+        return list.map(function(n) { return n.id; }).join(",");
+    }
+
+    function setNotifications(list) {
+        root.notifSignature = signatureOf(list);
+        root.storedNotifications = list;
+    }
 
     Process {
         id: notifStoreProcess
@@ -217,17 +189,16 @@ Item {
                 root.notificationsLoading = false;
                 try {
                     var data = JSON.parse(text.trim());
-                    if (data && Array.isArray(data)) {
-                        root.storedNotifications = data;
-                    }
-                } catch(e) {}
+                    if (data && Array.isArray(data) && root.signatureOf(data) !== root.notifSignature)
+                        root.setNotifications(data);
+                } catch (e) {}
             }
         }
     }
 
     function refreshNotifications() {
+        if (notifStoreProcess.running) return;
         root.notificationsLoading = true;
-        notifStoreProcess.command = [Quickshell.shellPath("scripts/notification_store.py"), "load"];
         notifStoreProcess.running = true;
     }
 
@@ -239,13 +210,20 @@ Item {
     }
 
     function clearAllNotifications() {
-        root.storedNotifications = [];
+        root.setNotifications([]);
         Quickshell.execDetached([Quickshell.shellPath("scripts/notification_store.py"), "clear"]);
     }
 
     function removeNotification(id) {
-        root.storedNotifications = root.storedNotifications.filter(function(n) { return n.id !== id; });
-        Quickshell.execDetached([Quickshell.shellPath("scripts/notification_store.py"), "remove", id.toString()]);
+        root.setNotifications(root.storedNotifications.filter(function(n) { return n.id !== id; }));
+        Quickshell.execDetached([Quickshell.shellPath("scripts/notification_store.py"), "remove", String(id)]);
+    }
+
+    readonly property int criticalCount: {
+        var c = 0;
+        for (var i = 0; i < storedNotifications.length; i++)
+            if (storedNotifications[i].urgency === "critical") c++;
+        return c;
     }
 
     Component.onCompleted: {
@@ -256,143 +234,180 @@ Item {
     onVisibleChanged: {
         if (root.visible) {
             root.refreshNotifications();
+            root.refreshWeather(false);
         }
     }
 
-    anchors.fill: parent
+    // ============================================================
+    // 5. FOCUS ROUTING (hex sector <-> wings)
+    // 0: Chrono/Calendar, 1: Weather, 2: Alerts
+    // ============================================================
+    property int focusSector: 0
+
+    function focusTo(sector) {
+        if (sector === 0) {
+            opsWing.currentView = 0;
+            root.focusSector = 0;
+        } else if (sector === 2) {
+            opsWing.currentView = 1;
+            root.focusSector = 2;
+        } else {
+            root.focusSector = 1;
+            weatherWing.pulse();
+        }
+    }
+
+    // Keyboard shortcuts, forwarded from ControlCenterOverlay while this tab is active
+    function handleKey(event) {
+        var calendarActive = opsWing.currentView === 0;
+        switch (event.key) {
+        case Qt.Key_Left:
+            if (event.modifiers & Qt.ShiftModifier) root.shiftMonth(-1);
+            else root.shiftSelection(-1);
+            return true;
+        case Qt.Key_Right:
+            if (event.modifiers & Qt.ShiftModifier) root.shiftMonth(1);
+            else root.shiftSelection(1);
+            return true;
+        case Qt.Key_PageUp:
+            root.shiftMonth(-1);
+            return true;
+        case Qt.Key_PageDown:
+            root.shiftMonth(1);
+            return true;
+        case Qt.Key_T:
+            root.resetToToday();
+            root.focusTo(0);
+            return true;
+        case Qt.Key_R:
+            root.refreshWeather(true);
+            root.focusTo(1);
+            return true;
+        case Qt.Key_N:
+            root.focusTo(calendarActive ? 2 : 0);
+            return true;
+        }
+        return false;
+    }
 
     // ============================================================
     // MAIN 3-WING TACTICAL CONSOLE
     // ============================================================
-    RowLayout {
+    ColumnLayout {
         anchors.fill: parent
         spacing: 6
 
-        // ============================================================
-        // 1. LEFT WING: METEOROLOGICAL RADAR
-        // ============================================================
-        DashboardWeatherWing {
-            id: weatherWing
-            Layout.fillHeight: true
+        RowLayout {
             Layout.fillWidth: true
-            Layout.preferredWidth: 380
-            Layout.minimumWidth: 330
-
-            weatherData: root.weatherData
-            weatherLoading: root.weatherLoading
-            onRefreshRequested: root.refreshWeather(true)
-        }
-
-        // ============================================================
-        // LEFT DATA BUS CONNECTOR (ACTIVE LASER BUS)
-        // ============================================================
-        Item {
             Layout.fillHeight: true
-            Layout.preferredWidth: 14
-            Layout.minimumWidth: 14
+            spacing: 6
 
-            Rectangle {
-                anchors.centerIn: parent
-                width: parent.width
-                height: 2
-                color: root.highlight
+            DashboardWeatherWing {
+                id: weatherWing
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                Layout.preferredWidth: 380
+                Layout.minimumWidth: 330
+
+                focused: root.focusSector === 1
+                weatherData: root.weatherData
+                weatherLoading: root.weatherLoading
+                onRefreshRequested: root.refreshWeather(true)
             }
 
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.right: parent.right
-                width: 4
-                height: 4
-                radius: 2
-                color: root.highlight
-            }
-        }
+            DataBus { focused: root.focusSector === 1; leftSide: true }
 
-        // ============================================================
-        // 2. CENTER: THE MAGI TRIAD HEXAGON COMMAND NEXUS
-        // ============================================================
-        DashboardHexNexus {
-            id: hexNexus
-            Layout.fillHeight: true
-            Layout.preferredWidth: 350
-            Layout.minimumWidth: 330
-            Layout.maximumWidth: 370
+            DashboardHexNexus {
+                id: hexNexus
+                Layout.fillHeight: true
+                Layout.preferredWidth: 350
+                Layout.minimumWidth: 330
+                Layout.maximumWidth: 370
 
-            currentTime: root.currentTime
-            colonBlink: root.colonBlink
-            localHours: root.localHours
-            localMinutes: root.localMinutes
-            localSeconds: root.localSeconds
-            dateBanner: root.dateBanner
-            tokyoTime: root.tokyoTime
-            utcTime: root.utcTime
-            dayOfYear: root.dayOfYear
+                colonBlink: root.colonBlink
+                localHours: root.localHours
+                localMinutes: root.localMinutes
+                localSeconds: root.localSeconds
+                dateBanner: root.dateBanner
+                tokyoTime: root.tokyoTime
+                utcTime: root.utcTime
+                dayOfYear: root.dayOfYear
+                daysInYear: root.daysInYear
+                weatherData: root.weatherData
+                alertCount: root.storedNotifications.length
+                criticalCount: root.criticalCount
+                activeSector: root.focusSector
 
-            weatherData: root.weatherData
-            storedNotifications: root.storedNotifications
-
-            onWeatherFocusRequested: {
-                // Focus on Weather
-            }
-            onOpsFocusRequested: {
-                opsWing.currentView = 1;
-            }
-            onChronoFocusRequested: {
-                opsWing.currentView = 0;
-            }
-        }
-
-        // ============================================================
-        // RIGHT DATA BUS CONNECTOR (ACTIVE LASER BUS)
-        // ============================================================
-        Item {
-            Layout.fillHeight: true
-            Layout.preferredWidth: 14
-            Layout.minimumWidth: 14
-
-            Rectangle {
-                anchors.centerIn: parent
-                width: parent.width
-                height: 2
-                color: root.highlight
+                onSectorClicked: (sector) => root.focusTo(sector)
             }
 
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.left: parent.left
-                width: 4
-                height: 4
-                radius: 2
-                color: root.highlight
+            DataBus { focused: root.focusSector !== 1; leftSide: false }
+
+            DashboardOpsWing {
+                id: opsWing
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                Layout.preferredWidth: 380
+                Layout.minimumWidth: 330
+
+                focused: root.focusSector !== 1
+                viewYear: root.viewYear
+                viewMonth: root.viewMonth
+                selectedDate: root.selectedDate
+                today: root.currentTime
+                calendarGridDays: root.calendarGridDays
+                monthNames: root.monthNames
+                dayNames: root.dayNames
+                selectedDayOfYear: root.dayOfYearFor(root.selectedDate)
+                selectedDaysInYear: root.daysInYearFor(root.selectedDate.getFullYear())
+                selectedWeek: root.isoWeekFor(root.selectedDate)
+
+                onMonthShiftRequested: (delta) => root.shiftMonth(delta)
+                onTodayRequested: root.resetToToday()
+                onDateSelected: (y, m, d) => { root.selectDate(y, m, d); root.focusSector = 0; }
+
+                storedNotifications: root.storedNotifications
+                onClearAllNotificationsRequested: root.clearAllNotifications()
+                onRemoveNotificationRequested: (id) => root.removeNotification(id)
+                onCurrentViewChanged: root.focusSector = (currentView === 1 ? 2 : 0)
             }
         }
 
-        // ============================================================
-        // 3. RIGHT WING: OPERATIONS & COMMS DECK
-        // ============================================================
-        DashboardOpsWing {
-            id: opsWing
-            Layout.fillHeight: true
+        // Shortcut hint strip
+        Text {
             Layout.fillWidth: true
-            Layout.preferredWidth: 380
-            Layout.minimumWidth: 330
+            horizontalAlignment: Text.AlignHCenter
+            text: "◀ ▶ DAY   ⇧◀ ▶ / PGUP PGDN MONTH   T TODAY   N CALENDAR/ALERTS   R RESCAN WEATHER"
+            color: Qt.rgba(0.1, 0.0, 0.0, 0.45)
+            font.family: "Liberation Sans, JetBrainsMono Nerd Font"
+            font.pixelSize: 8
+            font.bold: true
+            font.letterSpacing: 1.0
+        }
+    }
 
-            viewYear: root.viewYear
-            viewMonth: root.viewMonth
-            selectedDay: root.selectedDay
-            calendarGridDays: root.calendarGridDays
-            monthNames: root.monthNames
-            dayOfYear: root.dayOfYear
+    // Laser data bus between wings; brightens toward the focused wing
+    component DataBus: Item {
+        property bool focused: false
+        property bool leftSide: true
+        Layout.fillHeight: true
+        Layout.preferredWidth: 14
+        Layout.minimumWidth: 14
 
-            onNextMonthRequested: root.nextMonth()
-            onPrevMonthRequested: root.prevMonth()
-            onTodayRequested: root.resetToToday()
-            onDaySelected: (day) => root.selectedDay = day
-
-            storedNotifications: root.storedNotifications
-            notificationsLoading: root.notificationsLoading
-            onClearAllNotificationsRequested: root.clearAllNotifications()
-            onRemoveNotificationRequested: (id) => root.removeNotification(id)
+        Rectangle {
+            anchors.centerIn: parent
+            width: parent.width
+            height: 2
+            color: root.highlight
+            opacity: parent.focused ? 1.0 : 0.35
+            Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        }
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            x: parent.leftSide ? parent.width - width : 0
+            width: 4; height: 4; radius: 2
+            color: root.highlight
+            opacity: parent.focused ? 1.0 : 0.35
         }
     }
 }

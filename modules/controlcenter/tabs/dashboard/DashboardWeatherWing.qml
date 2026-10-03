@@ -8,24 +8,69 @@ Rectangle {
 
     property var weatherData: ({})
     property bool weatherLoading: false
+    property bool focused: false
     signal refreshRequested()
 
     readonly property color primary: "#cc0000"
-    readonly property color secondary: "#cc0000"
     readonly property color highlight: "#ff2222"
     readonly property color fg: "#1a0000"
     readonly property color fgMuted: Qt.rgba(0.1, 0.0, 0.0, 0.70)
-    readonly property color fgDim: Qt.rgba(0.1, 0.0, 0.0, 0.45)
+    readonly property color fgDim: Qt.rgba(0.1, 0.0, 0.0, 0.50)
     readonly property color panelBg: Qt.rgba(0.98, 0.98, 0.98, 0.94)
     readonly property color itemBg: Qt.rgba(1.0, 1.0, 1.0, 0.85)
-    readonly property color itemBorder: Qt.rgba(0.8, 0.0, 0.0, 0.35)
+    readonly property color itemBorder: Qt.rgba(0.8, 0.0, 0.0, 0.30)
     readonly property string hudFont: "Liberation Sans, JetBrainsMono Nerd Font"
 
-    color: root.panelBg
-    border.width: 1
-    border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45)
+    // ---------- data helpers ----------
+    function val(key, def) {
+        return (root.weatherData && root.weatherData[key] !== undefined && root.weatherData[key] !== null)
+            ? root.weatherData[key] : def;
+    }
+    readonly property var forecast: val("forecast", [])
+    readonly property bool hasData: root.weatherData && root.weatherData.temp !== undefined
+    readonly property bool isOffline: root.weatherData && root.weatherData.success === false
+    readonly property bool isCached: !!val("cached", false)
+    readonly property string statusText: root.weatherLoading ? "SYNCING"
+                                       : (!root.hasData ? "NO DATA"
+                                       : (root.isOffline ? "OFFLINE" : (root.isCached ? "CACHED" : "LIVE")))
+    readonly property color statusColor: (root.statusText === "LIVE") ? "#1f9d3a"
+                                       : (root.statusText === "SYNCING" ? root.primary : "#c77700")
 
-    // Top Specular Highlight Lip
+    readonly property real rangeMin: {
+        var m = 999;
+        for (var i = 0; i < forecast.length; i++) m = Math.min(m, forecast[i].min);
+        return m === 999 ? 0 : m;
+    }
+    readonly property real rangeMax: {
+        var m = -999;
+        for (var i = 0; i < forecast.length; i++) m = Math.max(m, forecast[i].max);
+        return m === -999 ? 1 : m;
+    }
+
+    function pulse() { pulseAnim.restart(); }
+
+    color: root.panelBg
+    border.width: root.focused ? 1.5 : 1
+    border.color: root.focused ? root.primary : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.40)
+    Behavior on border.color { ColorAnimation { duration: 180 } }
+
+    // Focus flash when the weather sector is selected in the hex nexus
+    Rectangle {
+        id: pulseFlash
+        anchors.fill: parent
+        color: "transparent"
+        border.width: 2
+        border.color: root.highlight
+        opacity: 0
+        z: 50
+        SequentialAnimation {
+            id: pulseAnim
+            NumberAnimation { target: pulseFlash; property: "opacity"; to: 1.0; duration: 90; easing.type: Easing.OutQuad }
+            NumberAnimation { target: pulseFlash; property: "opacity"; to: 0.0; duration: 420; easing.type: Easing.InOutQuad }
+        }
+    }
+
+    // Top specular lip
     Rectangle {
         anchors.top: parent.top
         anchors.left: parent.left
@@ -42,7 +87,7 @@ Rectangle {
         spacing: 8
 
         // ============================================================
-        // 1. HEADER & RESCAN ACTION
+        // 1. HEADER: TITLE, LINK STATUS, RESCAN
         // ============================================================
         RowLayout {
             Layout.fillWidth: true
@@ -52,35 +97,79 @@ Rectangle {
                 text: "▶ METEOROLOGICAL RADAR"
                 color: root.primary
                 font.family: root.hudFont
-                font.pixelSize: 10
+                font.pixelSize: 11
                 font.bold: true
                 font.letterSpacing: 1.2
                 Layout.fillWidth: true
                 elide: Text.ElideRight
             }
 
-            // Rescan Button
+            // Link status chip
             Rectangle {
-                width: 64
-                height: 20
-                color: rescanMouse.containsMouse ? root.primary : "#ffffff"
+                implicitWidth: statusRow.implicitWidth + 12
+                implicitHeight: 20
+                color: "#ffffff"
+                border.width: 1
+                border.color: root.statusColor
+
+                RowLayout {
+                    id: statusRow
+                    anchors.centerIn: parent
+                    spacing: 4
+                    Rectangle {
+                        width: 6; height: 6; radius: 3
+                        color: root.statusColor
+                        SequentialAnimation on opacity {
+                            running: root.visible && root.statusText === "LIVE"
+                            loops: Animation.Infinite
+                            alwaysRunToEnd: true
+                            NumberAnimation { to: 0.25; duration: 700; easing.type: Easing.InOutQuad }
+                            NumberAnimation { to: 1.0; duration: 700; easing.type: Easing.InOutQuad }
+                        }
+                    }
+                    Text {
+                        text: root.statusText
+                        color: root.statusColor
+                        font.family: root.hudFont
+                        font.pixelSize: 8
+                        font.bold: true
+                        font.letterSpacing: 0.8
+                    }
+                }
+            }
+
+            // Rescan button
+            Rectangle {
+                implicitWidth: 72
+                implicitHeight: 20
+                color: rescanMouse.containsMouse && !root.weatherLoading ? root.primary : "#ffffff"
                 border.width: 1
                 border.color: root.primary
+                opacity: root.weatherLoading ? 0.7 : 1.0
+                Behavior on color { ColorAnimation { duration: 120 } }
 
                 RowLayout {
                     anchors.centerIn: parent
-                    spacing: 3
+                    spacing: 4
                     Text {
+                        id: rescanGlyph
                         text: "⟳"
-                        color: rescanMouse.containsMouse ? "#ffffff" : root.primary
-                        font.pixelSize: 8
+                        color: rescanMouse.containsMouse && !root.weatherLoading ? "#ffffff" : root.primary
+                        font.pixelSize: 11
                         font.bold: true
+                        RotationAnimation on rotation {
+                            running: root.weatherLoading
+                            from: 0; to: 360
+                            duration: 900
+                            loops: Animation.Infinite
+                            onStopped: rescanGlyph.rotation = 0
+                        }
                     }
                     Text {
-                        text: root.weatherLoading ? "SYNC..." : "RESCAN"
-                        color: rescanMouse.containsMouse ? "#ffffff" : root.primary
+                        text: root.weatherLoading ? "SYNC…" : "RESCAN"
+                        color: rescanMouse.containsMouse && !root.weatherLoading ? "#ffffff" : root.primary
                         font.family: root.hudFont
-                        font.pixelSize: 7
+                        font.pixelSize: 8
                         font.bold: true
                     }
                 }
@@ -89,18 +178,22 @@ Rectangle {
                     id: rescanMouse
                     anchors.fill: parent
                     hoverEnabled: true
+                    enabled: !root.weatherLoading
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.refreshRequested()
                 }
+                ToolTip.visible: rescanMouse.containsMouse
+                ToolTip.delay: 600
+                ToolTip.text: "Force refresh weather (R)"
             }
         }
 
         // ============================================================
-        // 2. LOCATION & SECTOR BADGE
+        // 2. LOCATION BADGE
         // ============================================================
         Rectangle {
             Layout.fillWidth: true
-            height: 22
+            implicitHeight: 24
             color: "#ffffff"
             border.width: 1
             border.color: root.itemBorder
@@ -109,17 +202,16 @@ Rectangle {
                 anchors.fill: parent
                 anchors.leftMargin: 8
                 anchors.rightMargin: 8
-                spacing: 4
-
-                Rectangle {
-                    width: 4
-                    height: 4
-                    radius: 2
-                    color: root.primary
-                }
+                spacing: 6
 
                 Text {
-                    text: root.weatherData && root.weatherData.sector ? root.weatherData.sector : "TOKYO-3 // GEO-FRONT"
+                    text: "󰍎"
+                    color: root.primary
+                    font.family: root.hudFont
+                    font.pixelSize: 11
+                }
+                Text {
+                    text: root.val("sector", "UNKNOWN SECTOR")
                     color: root.primary
                     font.family: root.hudFont
                     font.pixelSize: 9
@@ -127,9 +219,8 @@ Rectangle {
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
-
                 Text {
-                    text: "UPD: " + (root.weatherData && root.weatherData.updated ? root.weatherData.updated : "--:--:--")
+                    text: "UPDATED " + root.val("updated", "--:--:--")
                     color: root.fgMuted
                     font.family: root.hudFont
                     font.pixelSize: 8
@@ -139,150 +230,154 @@ Rectangle {
         }
 
         // ============================================================
-        // 3. HERO CURRENT WEATHER CARD
+        // 3. HERO CURRENT CONDITIONS
         // ============================================================
         Rectangle {
             Layout.fillWidth: true
-            height: 88
+            implicitHeight: 96
             color: root.itemBg
             border.width: 1
             border.color: root.itemBorder
 
+            // Left accent bar
+            Rectangle {
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                width: 3
+                color: root.primary
+            }
+
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: 10
-                spacing: 12
+                anchors.leftMargin: 14
+                anchors.rightMargin: 12
+                spacing: 14
 
-                // Giant Weather Glyph
                 Text {
-                    text: root.weatherData && root.weatherData.icon ? root.weatherData.icon : "󰖙"
+                    text: root.val("icon", "󰖙")
                     color: root.primary
-                    font.pixelSize: 42
+                    font.family: root.hudFont
+                    font.pixelSize: 48
                     Layout.alignment: Qt.AlignVCenter
                 }
 
-                // Temp & Description
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 1
+                    spacing: 2
 
                     RowLayout {
-                        spacing: 6
+                        spacing: 8
                         Text {
-                            text: (root.weatherData && root.weatherData.temp !== undefined ? root.weatherData.temp : 28) + "°C"
+                            text: root.hasData ? (root.val("temp", 0) + "°") : "--°"
                             color: root.primary
                             font.family: root.hudFont
-                            font.pixelSize: 28
+                            font.pixelSize: 34
                             font.bold: true
                         }
-                        Text {
-                            text: "FEELS " + (root.weatherData && root.weatherData.feels_like !== undefined ? root.weatherData.feels_like : 31) + "°"
-                            color: root.fgMuted
-                            font.family: root.hudFont
-                            font.pixelSize: 9
-                            font.bold: true
-                            Layout.alignment: Qt.AlignBottom
-                            Layout.bottomMargin: 4
+                        ColumnLayout {
+                            spacing: 0
+                            Layout.alignment: Qt.AlignVCenter
+                            Text {
+                                text: "FEELS " + root.val("feels_like", "--") + "°"
+                                color: root.fgMuted
+                                font.family: root.hudFont
+                                font.pixelSize: 9
+                                font.bold: true
+                            }
+                            Text {
+                                visible: root.forecast.length > 0
+                                text: root.forecast.length > 0
+                                      ? ("H " + root.forecast[0].max + "°  L " + root.forecast[0].min + "°")
+                                      : ""
+                                color: root.fgDim
+                                font.family: root.hudFont
+                                font.pixelSize: 9
+                                font.bold: true
+                            }
                         }
                     }
 
                     Text {
-                        text: root.weatherData && root.weatherData.condition ? root.weatherData.condition : "ATMOSPHERE NOMINAL"
+                        text: root.val("condition", "AWAITING TELEMETRY")
                         color: root.fg
                         font.family: root.hudFont
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         font.bold: true
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
 
                     Text {
-                        text: "SURFACE CONDITIONS // VISIBILITY OPTIMAL"
-                        color: root.fgDim
+                        visible: root.isOffline || root.isCached
+                        text: root.isOffline ? "⚠ NETWORK UNREACHABLE — SHOWING FALLBACK DATA"
+                                             : "⚠ LINK LOST — SHOWING LAST KNOWN READINGS"
+                        color: "#c77700"
                         font.family: root.hudFont
-                        font.pixelSize: 7
+                        font.pixelSize: 8
                         font.bold: true
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
                     }
                 }
             }
         }
 
         // ============================================================
-        // 4. ATMOSPHERIC SENSOR TILES (2x2 GRID)
+        // 4. ATMOSPHERIC SENSOR TILES
         // ============================================================
         GridLayout {
             Layout.fillWidth: true
             columns: 2
-            columnSpacing: 4
-            rowSpacing: 4
+            columnSpacing: 6
+            rowSpacing: 6
 
-            Rectangle {
-                Layout.fillWidth: true
-                height: 38
-                color: "#ffffff"
-                border.width: 1
-                border.color: root.itemBorder
+            SensorTile {
+                icon: "󰖎"
+                label: "HUMIDITY"
+                value: root.val("humidity", "--") + "%"
+                fill: Math.min(1, root.val("humidity", 0) / 100)
+            }
 
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 4
-                    spacing: 1
-                    Text { text: "󰖆 HUMIDITY"; color: root.fgDim; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                    Text { text: (root.weatherData && root.weatherData.humidity !== undefined ? root.weatherData.humidity : 65) + "% REL"; color: root.primary; font.family: root.hudFont; font.pixelSize: 9; font.bold: true }
+            SensorTile {
+                icon: "󰖝"
+                label: "WIND"
+                value: root.val("wind_speed", "--") + " km/h " + root.val("wind_dir", "")
+                fill: Math.min(1, root.val("wind_speed", 0) / 60)
+
+                // Compass arrow pointing where the wind blows toward
+                Text {
+                    anchors.right: parent.right
+                    anchors.rightMargin: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.verticalCenterOffset: -3
+                    text: "↓"
+                    color: root.primary
+                    font.pixelSize: 16
+                    font.bold: true
+                    rotation: root.val("wind_deg", 0)
+                    Behavior on rotation { RotationAnimation { duration: 400; direction: RotationAnimation.Shortest; easing.type: Easing.OutCubic } }
                 }
             }
 
-            Rectangle {
-                Layout.fillWidth: true
-                height: 38
-                color: "#ffffff"
-                border.width: 1
-                border.color: root.itemBorder
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 4
-                    spacing: 1
-                    Text { text: "󰖝 WIND VECTOR"; color: root.fgDim; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                    Text { text: (root.weatherData && root.weatherData.wind_speed !== undefined ? root.weatherData.wind_speed : 12) + " km/h " + (root.weatherData && root.weatherData.wind_dir ? root.weatherData.wind_dir : "NE"); color: root.primary; font.family: root.hudFont; font.pixelSize: 9; font.bold: true }
-                }
+            SensorTile {
+                icon: "󰖗"
+                label: "PRECIPITATION"
+                value: root.val("precipitation", 0) + " mm"
+                fill: Math.min(1, root.val("precipitation", 0) / 10)
             }
 
-            Rectangle {
-                Layout.fillWidth: true
-                height: 38
-                color: "#ffffff"
-                border.width: 1
-                border.color: root.itemBorder
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 4
-                    spacing: 1
-                    Text { text: "󰖖 PRECIPITATION"; color: root.fgDim; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                    Text { text: (root.weatherData && root.weatherData.precipitation !== undefined ? root.weatherData.precipitation : 0.0) + " mm/h"; color: root.primary; font.family: root.hudFont; font.pixelSize: 9; font.bold: true }
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                height: 38
-                color: "#ffffff"
-                border.width: 1
-                border.color: root.itemBorder
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 4
-                    spacing: 1
-                    Text { text: "󰖔 PRESSURE"; color: root.fgDim; font.family: root.hudFont; font.pixelSize: 7; font.bold: true }
-                    Text { text: (root.weatherData && root.weatherData.pressure !== undefined ? root.weatherData.pressure : 1012) + " hPa"; color: root.primary; font.family: root.hudFont; font.pixelSize: 9; font.bold: true }
-                }
+            SensorTile {
+                icon: "󰡴"
+                label: "PRESSURE"
+                value: root.val("pressure", "--") + " hPa"
+                // Map 970..1050 hPa onto the bar
+                fill: Math.max(0, Math.min(1, (root.val("pressure", 1013) - 970) / 80))
             }
         }
 
         // ============================================================
-        // 5. 5-DAY TACTICAL FORECAST DECK
+        // 5. 5-DAY FORECAST WITH TEMPERATURE RANGE BARS
         // ============================================================
         Rectangle {
             Layout.fillWidth: true
@@ -297,73 +392,201 @@ Rectangle {
                 anchors.margins: 8
                 spacing: 4
 
+                RowLayout {
+                    Layout.fillWidth: true
+                    Text {
+                        text: "▶ 5-DAY FORECAST"
+                        color: root.primary
+                        font.family: root.hudFont
+                        font.pixelSize: 10
+                        font.bold: true
+                        font.letterSpacing: 1.1
+                        Layout.fillWidth: true
+                    }
+                    Text {
+                        text: root.forecast.length > 0 ? (Math.round(root.rangeMin) + "° – " + Math.round(root.rangeMax) + "°") : ""
+                        color: root.fgDim
+                        font.family: root.hudFont
+                        font.pixelSize: 8
+                        font.bold: true
+                    }
+                }
+
+                // Empty state
                 Text {
-                    text: "▶ 5-DAY ATMOSPHERIC FORECAST:"
-                    color: root.primary
+                    visible: root.forecast.length === 0
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    text: root.weatherLoading ? "ACQUIRING FORECAST…" : "NO FORECAST DATA"
+                    color: root.fgDim
                     font.family: root.hudFont
                     font.pixelSize: 9
                     font.bold: true
-                    font.letterSpacing: 1.1
                 }
 
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    spacing: 3
+                Repeater {
+                    model: root.forecast
 
-                    Repeater {
-                        model: root.weatherData && root.weatherData.forecast ? root.weatherData.forecast : []
+                    Rectangle {
+                        id: fRow
+                        required property var modelData
+                        required property int index
+                        readonly property bool isToday: index === 0
+                        readonly property real span: Math.max(1, root.rangeMax - root.rangeMin)
 
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            color: "#ffffff"
-                            border.width: 1
-                            border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.25)
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.maximumHeight: 40
+                        color: fRowMouse.containsMouse ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.06)
+                                                       : (isToday ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.04) : "#ffffff")
+                        border.width: 1
+                        border.color: isToday ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.55)
+                                              : Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.20)
 
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 8
-                                anchors.rightMargin: 8
-                                spacing: 6
+                        MouseArea { id: fRowMouse; anchors.fill: parent; hoverEnabled: true }
 
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            spacing: 8
+
+                            ColumnLayout {
+                                spacing: 0
+                                Layout.preferredWidth: 38
                                 Text {
-                                    text: modelData.day
-                                    color: root.primary
-                                    font.family: root.hudFont
-                                    font.pixelSize: 10
-                                    font.bold: true
-                                    Layout.preferredWidth: 30
-                                }
-
-                                Text {
-                                    text: modelData.icon || "󰖙"
-                                    color: root.primary
-                                    font.pixelSize: 14
-                                    Layout.preferredWidth: 20
-                                }
-
-                                Text {
-                                    text: (modelData.desc || "").toUpperCase()
-                                    color: root.fg
-                                    font.family: root.hudFont
-                                    font.pixelSize: 8
-                                    font.bold: true
-                                    elide: Text.ElideRight
-                                    Layout.fillWidth: true
-                                }
-
-                                Text {
-                                    text: modelData.max + "° / " + modelData.min + "°"
+                                    text: fRow.isToday ? "TODAY" : fRow.modelData.day
                                     color: root.primary
                                     font.family: root.hudFont
                                     font.pixelSize: 9
                                     font.bold: true
                                 }
+                                Text {
+                                    visible: !!fRow.modelData.date
+                                    text: fRow.modelData.date ? fRow.modelData.date.slice(8, 10) + "/" + fRow.modelData.date.slice(5, 7) : ""
+                                    color: root.fgDim
+                                    font.family: root.hudFont
+                                    font.pixelSize: 8
+                                    font.bold: true
+                                }
+                            }
+
+                            Text {
+                                text: fRow.modelData.icon || "󰖙"
+                                color: root.primary
+                                font.family: root.hudFont
+                                font.pixelSize: 16
+                                Layout.preferredWidth: 20
+                            }
+
+                            Text {
+                                text: (fRow.modelData.desc || "").toUpperCase()
+                                color: root.fg
+                                font.family: root.hudFont
+                                font.pixelSize: 8
+                                font.bold: true
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                                Layout.preferredWidth: 80
+                            }
+
+                            Text {
+                                text: fRow.modelData.min + "°"
+                                color: root.fgMuted
+                                font.family: root.hudFont
+                                font.pixelSize: 9
+                                font.bold: true
+                                horizontalAlignment: Text.AlignRight
+                                Layout.preferredWidth: 22
+                            }
+
+                            // Range bar: position relative to week low/high
+                            Item {
+                                Layout.preferredWidth: 64
+                                Layout.fillWidth: true
+                                implicitHeight: 6
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: 3
+                                    color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.10)
+                                }
+                                Rectangle {
+                                    x: parent.width * (fRow.modelData.min - root.rangeMin) / fRow.span
+                                    width: Math.max(6, parent.width * (fRow.modelData.max - fRow.modelData.min) / fRow.span)
+                                    height: parent.height
+                                    radius: 3
+                                    gradient: Gradient {
+                                        orientation: Gradient.Horizontal
+                                        GradientStop { position: 0.0; color: "#e07070" }
+                                        GradientStop { position: 1.0; color: root.primary }
+                                    }
+                                }
+                            }
+
+                            Text {
+                                text: fRow.modelData.max + "°"
+                                color: root.primary
+                                font.family: root.hudFont
+                                font.pixelSize: 9
+                                font.bold: true
+                                Layout.preferredWidth: 22
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // Compact sensor tile with a fill gauge along the bottom edge
+    component SensorTile: Rectangle {
+        property string icon: ""
+        property string label: ""
+        property string value: ""
+        property real fill: 0
+
+        Layout.fillWidth: true
+        implicitHeight: 46
+        color: "#ffffff"
+        border.width: 1
+        border.color: root.itemBorder
+
+        ColumnLayout {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: 6
+            spacing: 2
+            RowLayout {
+                spacing: 4
+                Text { text: icon; color: root.primary; font.family: root.hudFont; font.pixelSize: 10 }
+                Text { text: label; color: root.fgDim; font.family: root.hudFont; font.pixelSize: 8; font.bold: true; font.letterSpacing: 0.6 }
+            }
+            Text {
+                text: value
+                color: root.fg
+                font.family: root.hudFont
+                font.pixelSize: 12
+                font.bold: true
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+            }
+        }
+
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.margins: 1
+            height: 3
+            color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.08)
+            Rectangle {
+                height: parent.height
+                width: parent.width * fill
+                color: root.primary
+                Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
             }
         }
     }

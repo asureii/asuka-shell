@@ -41,15 +41,16 @@ Scope {
 
             anchors {
                 top: true
-                left: true
-                right: true
             }
 
             margins {
                 top: 0
             }
 
+            implicitWidth: 1280
+
             readonly property real fullHeight: 84
+            readonly property real wingHeight: 42
             readonly property bool isLauncherActive: (typeof nervLauncher !== "undefined" && nervLauncher && nervLauncher.visible)
             readonly property bool isVitalsActive: (typeof vitalsPopout !== "undefined" && vitalsPopout && vitalsPopout.visible)
             readonly property bool isAudioBriActive: (typeof audioBriPopout !== "undefined" && audioBriPopout && audioBriPopout.visible)
@@ -57,7 +58,10 @@ Scope {
             readonly property bool isWorkspacePopoutActive: (typeof activeWorkspacePopout !== "undefined" && activeWorkspacePopout && activeWorkspacePopout.visible)
             readonly property bool hasActivePopout: root.isLauncherActive || root.isVitalsActive || root.isAudioBriActive || root.isNetworkActive || root.isWorkspacePopoutActive
 
-            readonly property bool isBarActive: root.revealed || barScope.forceShow || root.hasActivePopout || (typeof controlCenter !== "undefined" && controlCenter && controlCenter.visible)
+            readonly property bool shouldBeOpen: root.revealed || barScope.forceShow || root.hasActivePopout
+            readonly property bool isAnimating: openAnim.running || closeAnim.running
+
+            readonly property bool isBarActive: root.shouldBeOpen || (typeof controlCenter !== "undefined" && controlCenter && controlCenter.visible)
             onIsBarActiveChanged: {
                 NervVitals.activeMode = root.isBarActive;
                 if (root.isBarActive) {
@@ -74,14 +78,35 @@ Scope {
             }
 
             readonly property real triggerHeight: 4
-            implicitHeight: (root.revealed || barScope.forceShow || root.isAnimating || root.hasActivePopout) ? root.fullHeight : root.triggerHeight
+            implicitHeight: (root.shouldBeOpen || root.isAnimating) ? root.fullHeight : root.triggerHeight
             color: "transparent"
 
             // ============================================================
             // AUTO-HIDE & DROPDOWN STATE
             // ============================================================
             property bool revealed: false
-            property bool isAnimating: false
+            property bool ready: false
+
+            Component.onCompleted: {
+                ready = true;
+                if (root.shouldBeOpen) {
+                    wingsContainer.y = 0;
+                    wingsContainer.opacity = 1.0;
+                    hexContainer.y = 0;
+                    hexContainer.opacity = 1.0;
+                }
+            }
+
+            onShouldBeOpenChanged: {
+                if (!ready) return;
+                if (shouldBeOpen) {
+                    closeAnim.stop();
+                    openAnim.restart();
+                } else {
+                    openAnim.stop();
+                    closeAnim.restart();
+                }
+            }
 
             Connections {
                 target: (typeof areaPicker !== "undefined") ? areaPicker : null
@@ -119,7 +144,7 @@ Scope {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                height: (root.revealed || barScope.forceShow || root.isAnimating || root.hasActivePopout) ? root.fullHeight : root.triggerHeight
+                height: (root.shouldBeOpen || root.isAnimating) ? root.fullHeight : root.triggerHeight
                 hoverEnabled: true
                 acceptedButtons: Qt.NoButton
                 propagateComposedEvents: true
@@ -143,146 +168,265 @@ Scope {
                     id: barContainer
                     width: parent.width
                     height: root.fullHeight
-                    y: (root.revealed || barScope.forceShow || root.hasActivePopout) ? 0 : (-root.fullHeight + root.triggerHeight)
-                    opacity: (root.revealed || barScope.forceShow || root.hasActivePopout) ? 1.0 : 0.0
 
-                    Behavior on y {
-                        SequentialAnimation {
-                            ScriptAction { script: root.isAnimating = true }
-                            NumberAnimation {
-                                duration: (root.revealed || barScope.forceShow || root.hasActivePopout) ? 220 : 160
-                                easing.type: (root.revealed || barScope.forceShow || root.hasActivePopout) ? Easing.OutCubic : Easing.InQuad
-                            }
-                            ScriptAction { script: root.isAnimating = false }
-                        }
-                    }
-
-                    Behavior on opacity {
-                        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-                    }
-
-                    // Polygonal NERV HUD Vector Background
-                    BarBackground {
-                        id: barBg
-                        anchors.fill: parent
-                        fillColor: root.bg
-                        hexFillColor: root.primary
-                        hexBorderColor: "#ffffff"
-                        strokeColor: root.primary
-                        accentColor: root.accent
-                        strokeWidth: 1.5
-                        wingHeight: 42
-                        leftChamferWidth: 42
-                        rightChamferWidth: 42
-                        centerTopWidth: 190
-                        centerMidWidth: 260
-                        centerBottomWidth: 190
-                        centerBottomY: root.fullHeight - 1
-                    }
-
-                    // Directional 1px Overhead Specular Highlight
-                    Rectangle {
-                        anchors.top: parent.top
+                    // ============================================================
+                    // LAYER 1: LEFT & RIGHT WINGS CONTAINER
+                    // ============================================================
+                    Item {
+                        id: wingsContainer
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        anchors.leftMargin: barBg.leftChamferWidth
-                        anchors.rightMargin: barBg.rightChamferWidth
-                        height: 1
-                        color: Qt.rgba(1.0, 1.0, 1.0, 0.55)
-                        z: 10
-                    }
+                        height: root.fullHeight
+                        y: -root.wingHeight
+                        opacity: 0.0
+                        z: 1
 
-                    // ============================================================
-                    // LEFT WING (Workspaces & Active Window)
-                    // ============================================================
-                    Item {
-                        id: leftWing
-                        x: barBg.leftChamferWidth + 6
-                        y: 0
-                        width: barBg.centerMidLeftX - x - 8
-                        height: barBg.wingHeight
-
-                        RowLayout {
+                        // Polygonal NERV HUD Wings Vector Background
+                        BarBackground {
+                            id: barBg
                             anchors.fill: parent
-                            anchors.rightMargin: 4
-                            spacing: 6
+                            section: "wings"
+                            fillColor: root.bg
+                            hexFillColor: root.primary
+                            hexBorderColor: "#ffffff"
+                            strokeColor: root.primary
+                            accentColor: root.accent
+                            strokeWidth: 1.5
+                            wingHeight: root.wingHeight
+                            leftChamferWidth: 42
+                            rightChamferWidth: 42
+                            centerTopWidth: 190
+                            centerMidWidth: 260
+                            centerBottomWidth: 190
+                            centerBottomY: root.fullHeight - 1
+                        }
 
-                            BarWorkspaces {
-                                primary: root.primary
-                                secondary: root.secondary
-                                fgMuted: root.fgMuted
-                                hudFont: root.hudFont
+                        // Left Wing Directional 1px Overhead Specular Highlight
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.leftMargin: barBg.leftChamferWidth
+                            width: Math.max(0, barBg.centerTopLeftX - barBg.leftChamferWidth)
+                            height: 1
+                            color: Qt.rgba(1.0, 1.0, 1.0, 0.55)
+                            z: 10
+                        }
+
+                        // Right Wing Directional 1px Overhead Specular Highlight
+                        Rectangle {
+                            anchors.top: parent.top
+                            x: barBg.centerTopRightX
+                            anchors.right: parent.right
+                            anchors.rightMargin: barBg.rightChamferWidth
+                            height: 1
+                            color: Qt.rgba(1.0, 1.0, 1.0, 0.55)
+                            z: 10
+                        }
+
+                        // Left Wing (Workspaces & Active Window)
+                        Item {
+                            id: leftWing
+                            x: barBg.leftChamferWidth + 6
+                            y: 0
+                            width: barBg.centerMidLeftX - x - 8
+                            height: barBg.wingHeight
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.rightMargin: 4
+                                spacing: 6
+
+                                BarWorkspaces {
+                                    primary: root.primary
+                                    secondary: root.secondary
+                                    fgMuted: root.fgMuted
+                                    hudFont: root.hudFont
+                                }
+
+                                BarActiveWindow {
+                                    primary: root.primary
+                                    fg: root.fg
+                                    hudFont: root.hudFont
+                                }
                             }
+                        }
 
-                            BarActiveWindow {
-                                primary: root.primary
-                                fg: root.fg
-                                hudFont: root.hudFont
+                        // Right Wing (Hardware Vitals, Volume & Brightness, Battery, Actions)
+                        Item {
+                            id: rightWing
+                            x: barBg.centerMidRightX + 8
+                            y: 0
+                            width: root.width - x - barBg.rightChamferWidth - 6
+                            height: barBg.wingHeight
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 4
+                                spacing: 6
+
+                                Item { Layout.fillWidth: true }
+
+                                BarHardwareStats {
+                                    primary: root.primary
+                                    secondary: root.secondary
+                                    fgDim: root.fgDim
+                                    itemBorder: root.itemBorder
+                                    hudFont: root.hudFont
+                                }
+
+                                BarAudioVolume {
+                                    primary: root.primary
+                                    secondary: root.secondary
+                                    itemBorder: root.itemBorder
+                                    hudFont: root.hudFont
+                                }
+
+                                BarNetwork {
+                                    primary: root.primary
+                                    secondary: root.secondary
+                                    fgDim: root.fgDim
+                                    hudFont: root.hudFont
+                                }
+
+                                BarBattery {
+                                    primary: root.primary
+                                    secondary: root.secondary
+                                    itemBorder: root.itemBorder
+                                    hudFont: root.hudFont
+                                }
+
+                                BarQuickActions {
+                                    primary: root.primary
+                                    secondary: root.secondary
+                                }
                             }
                         }
                     }
 
                     // ============================================================
-                    // CENTER HEX COMMAND POD (Clock, Date, Target Crosshair)
+                    // LAYER 2: CENTER HEX COMMAND POD CONTAINER
                     // ============================================================
-                    BarClockPod {
-                        id: centerPod
-                        x: barBg.centerMidLeftX
-                        y: 0
-                        width: barBg.centerMidWidth
+                    Item {
+                        id: hexContainer
+                        anchors.left: parent.left
+                        anchors.right: parent.right
                         height: root.fullHeight
-                        hudFont: root.hudFont
+                        y: -root.fullHeight
+                        opacity: 0.0
+                        z: 2
+
+                        // Polygonal NERV HUD Center Hexagon Vector Background
+                        BarBackground {
+                            id: hexBg
+                            anchors.fill: parent
+                            section: "hexagon"
+                            fillColor: barBg.fillColor
+                            hexFillColor: barBg.hexFillColor
+                            hexBorderColor: barBg.hexBorderColor
+                            strokeColor: barBg.strokeColor
+                            accentColor: barBg.accentColor
+                            strokeWidth: barBg.strokeWidth
+                            wingHeight: barBg.wingHeight
+                            leftChamferWidth: barBg.leftChamferWidth
+                            rightChamferWidth: barBg.rightChamferWidth
+                            centerTopWidth: barBg.centerTopWidth
+                            centerMidWidth: barBg.centerMidWidth
+                            centerBottomWidth: barBg.centerBottomWidth
+                            centerBottomY: barBg.centerBottomY
+                        }
+
+                        // Center Hex Command Pod (Clock, Date, Target Crosshair)
+                        BarClockPod {
+                            id: centerPod
+                            x: hexBg.centerMidLeftX
+                            y: 0
+                            width: hexBg.centerMidWidth
+                            height: root.fullHeight
+                            hudFont: root.hudFont
+                        }
                     }
 
                     // ============================================================
-                    // RIGHT WING (Hardware Vitals, Volume & Brightness, Battery, Actions)
+                    // STAGGERED ORCHESTRATION ANIMATIONS
                     // ============================================================
-                    Item {
-                        id: rightWing
-                        x: barBg.centerMidRightX + 8
-                        y: 0
-                        width: root.width - x - barBg.rightChamferWidth - 6
-                        height: barBg.wingHeight
+                    // Popout Sequence: Hexagon middle pops out first, then wings
+                    SequentialAnimation {
+                        id: openAnim
 
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 4
-                            spacing: 6
-
-                            Item { Layout.fillWidth: true }
-
-                            BarHardwareStats {
-                                primary: root.primary
-                                secondary: root.secondary
-                                fgDim: root.fgDim
-                                itemBorder: root.itemBorder
-                                hudFont: root.hudFont
+                        // Phase 1: Center Hexagon drops down first
+                        ParallelAnimation {
+                            NumberAnimation {
+                                target: hexContainer
+                                property: "y"
+                                to: 0
+                                duration: 200
+                                easing.type: Easing.OutCubic
                             }
-
-                            BarAudioVolume {
-                                primary: root.primary
-                                secondary: root.secondary
-                                itemBorder: root.itemBorder
-                                hudFont: root.hudFont
+                            NumberAnimation {
+                                target: hexContainer
+                                property: "opacity"
+                                to: 1.0
+                                duration: 160
+                                easing.type: Easing.OutQuad
                             }
+                        }
 
-                            BarNetwork {
-                                primary: root.primary
-                                secondary: root.secondary
-                                fgDim: root.fgDim
-                                hudFont: root.hudFont
+                        // Phase 2: Wings pop out
+                        ParallelAnimation {
+                            NumberAnimation {
+                                target: wingsContainer
+                                property: "y"
+                                to: 0
+                                duration: 180
+                                easing.type: Easing.OutCubic
                             }
-
-                            BarBattery {
-                                primary: root.primary
-                                secondary: root.secondary
-                                itemBorder: root.itemBorder
-                                hudFont: root.hudFont
+                            NumberAnimation {
+                                target: wingsContainer
+                                property: "opacity"
+                                to: 1.0
+                                duration: 150
+                                easing.type: Easing.OutQuad
                             }
+                        }
+                    }
 
-                            BarQuickActions {
-                                primary: root.primary
-                                secondary: root.secondary
+                    // Retract Sequence: Wings retract first, then Hexagon
+                    SequentialAnimation {
+                        id: closeAnim
+
+                        // Phase 1: Wings retract first
+                        ParallelAnimation {
+                            NumberAnimation {
+                                target: wingsContainer
+                                property: "y"
+                                to: -root.wingHeight
+                                duration: 140
+                                easing.type: Easing.InQuad
+                            }
+                            NumberAnimation {
+                                target: wingsContainer
+                                property: "opacity"
+                                to: 0.0
+                                duration: 120
+                                easing.type: Easing.InQuad
+                            }
+                        }
+
+                        // Phase 2: Center Hexagon retracts
+                        ParallelAnimation {
+                            NumberAnimation {
+                                target: hexContainer
+                                property: "y"
+                                to: -root.fullHeight
+                                duration: 140
+                                easing.type: Easing.InQuad
+                            }
+                            NumberAnimation {
+                                target: hexContainer
+                                property: "opacity"
+                                to: 0.0
+                                duration: 120
+                                easing.type: Easing.InQuad
                             }
                         }
                     }

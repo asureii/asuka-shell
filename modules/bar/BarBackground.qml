@@ -21,6 +21,7 @@ Item {
     property real centerMidWidth: 230
     property real centerBottomWidth: 170
     property real centerBottomY: height - 1
+    property string section: "all" // "all", "wings", "hexagon"
 
     readonly property real midX: width / 2
     readonly property real centerMidLeftX: midX - centerMidWidth / 2
@@ -56,174 +57,182 @@ Item {
             var ctlX = root.centerTopLeftX;
             var ctrX = root.centerTopRightX;
 
+            var drawWings = (root.section === "all" || root.section === "wings");
+            var drawHex = (root.section === "all" || root.section === "hexagon");
+
             // 1. LEFT & RIGHT WINGS BACKGROUND FILL (WHITE WITH GRID)
-            ctx.save();
-            ctx.beginPath();
-            // Left wing path
-            ctx.moveTo(0, 0);
-            ctx.lineTo(ctlX, 0);
-            ctx.lineTo(cmlX, wh);
-            ctx.lineTo(lc, wh);
-            ctx.closePath();
+            if (drawWings) {
+                ctx.save();
+                ctx.beginPath();
+                // Left wing path
+                ctx.moveTo(0, 0);
+                ctx.lineTo(ctlX, 0);
+                ctx.lineTo(cmlX, wh);
+                ctx.lineTo(lc, wh);
+                ctx.closePath();
 
-            // Right wing path
-            ctx.moveTo(ctrX, 0);
-            ctx.lineTo(w, 0);
-            ctx.lineTo(w - rc, wh);
-            ctx.lineTo(cmrX, wh);
-            ctx.closePath();
+                // Right wing path
+                ctx.moveTo(ctrX, 0);
+                ctx.lineTo(w, 0);
+                ctx.lineTo(w - rc, wh);
+                ctx.lineTo(cmrX, wh);
+                ctx.closePath();
 
-            // Solid Background for wings only
-            ctx.fillStyle = root.fillColor;
-            ctx.fill();
+                // Solid Background for wings only
+                ctx.fillStyle = root.fillColor;
+                ctx.fill();
 
-            // Clip to draw subtle tactical grid pattern inside wings only
-            ctx.clip();
+                // Clip to draw subtle tactical grid pattern inside wings only
+                ctx.clip();
 
-            // Subtle Scanline / Grid Effect
-            ctx.strokeStyle = root.gridColor;
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            for (var gy = 4; gy < wh; gy += 4) {
-                ctx.moveTo(0, gy);
-                ctx.lineTo(w, gy);
+                // Subtle Scanline / Grid Effect
+                ctx.strokeStyle = root.gridColor;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (var gy = 4; gy < wh; gy += 4) {
+                    ctx.moveTo(0, gy);
+                    ctx.lineTo(w, gy);
+                }
+                ctx.stroke();
+
+                // Faint vertical guide ticks
+                ctx.beginPath();
+                for (var gx = 20; gx < w; gx += 20) {
+                    ctx.moveTo(gx, 0);
+                    ctx.lineTo(gx, wh);
+                }
+                ctx.stroke();
+
+                ctx.restore();
+
+                // 3. WINGS RED BORDER OUTLINES
+                ctx.save();
+                ctx.strokeStyle = root.strokeColor;
+                ctx.lineWidth = root.strokeWidth;
+                ctx.lineJoin = "miter";
+                ctx.miterLimit = 4;
+
+                // Left wing bottom outline
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(lc, wh);
+                ctx.lineTo(cmlX, wh);
+                ctx.stroke();
+
+                // Right wing bottom outline
+                ctx.beginPath();
+                ctx.moveTo(cmrX, wh);
+                ctx.lineTo(w - rc, wh);
+                ctx.lineTo(w, 0);
+                ctx.stroke();
+
+                // Top screen baseline for left & right wings
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(ctlX, 0);
+                ctx.moveTo(ctrX, 0);
+                ctx.lineTo(w, 0);
+                ctx.stroke();
+
+                // Wing hazard notches
+                ctx.strokeStyle = root.accentColor;
+                ctx.lineWidth = 2;
+
+                // Left wing start notch
+                ctx.beginPath();
+                ctx.moveTo(lc + 4, wh - 3);
+                ctx.lineTo(lc + 14, wh - 3);
+                ctx.stroke();
+
+                // Right wing end notch
+                ctx.beginPath();
+                ctx.moveTo(w - rc - 14, wh - 3);
+                ctx.lineTo(w - rc - 4, wh - 3);
+                ctx.stroke();
+
+                ctx.restore();
             }
-            ctx.stroke();
-
-            // Faint vertical guide ticks
-            ctx.beginPath();
-            for (var gx = 20; gx < w; gx += 20) {
-                ctx.moveTo(gx, 0);
-                ctx.lineTo(gx, wh);
-            }
-            ctx.stroke();
-
-            ctx.restore();
 
             // 2. CENTER HEXAGON FILL (SOLID RED POD)
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(ctlX, 0);
-            ctx.lineTo(ctrX, 0);
-            ctx.lineTo(cmrX, wh);
-            ctx.lineTo(cbrX, cby);
-            ctx.lineTo(cblX, cby);
-            ctx.lineTo(cmlX, wh);
-            ctx.closePath();
+            if (drawHex) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(ctlX, 0);
+                ctx.lineTo(ctrX, 0);
+                ctx.lineTo(cmrX, wh);
+                ctx.lineTo(cbrX, cby);
+                ctx.lineTo(cblX, cby);
+                ctx.lineTo(cmlX, wh);
+                ctx.closePath();
 
-            ctx.fillStyle = root.hexFillColor;
-            ctx.fill();
+                ctx.fillStyle = root.hexFillColor;
+                ctx.fill();
 
-            // Subtle dark tactical grid inside the red hex pod
-            ctx.clip();
-            ctx.strokeStyle = Qt.rgba(0, 0, 0, 0.18);
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            for (var hgy = 4; hgy < h; hgy += 4) {
-                ctx.moveTo(cmlX - 10, hgy);
-                ctx.lineTo(cmrX + 10, hgy);
+                // Subtle dark tactical grid inside the red hex pod
+                ctx.clip();
+                ctx.strokeStyle = Qt.rgba(0, 0, 0, 0.18);
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (var hgy = 4; hgy < h; hgy += 4) {
+                    ctx.moveTo(cmlX - 10, hgy);
+                    ctx.lineTo(cmrX + 10, hgy);
+                }
+                ctx.stroke();
+
+                ctx.beginPath();
+                for (var hgx = cmlX; hgx <= cmrX; hgx += 16) {
+                    ctx.moveTo(hgx, 0);
+                    ctx.lineTo(hgx, h);
+                }
+                ctx.stroke();
+
+                ctx.restore();
+
+                // 4. CENTER HEXAGON WHITE BORDER OUTLINE
+                ctx.save();
+                ctx.strokeStyle = root.hexBorderColor;
+                ctx.lineWidth = root.strokeWidth;
+                ctx.lineJoin = "miter";
+                ctx.miterLimit = 4;
+
+                ctx.beginPath();
+                ctx.moveTo(ctlX, 0);
+                ctx.lineTo(ctrX, 0);
+                ctx.lineTo(cmrX, wh);
+                ctx.lineTo(cbrX, cby);
+                ctx.lineTo(cblX, cby);
+                ctx.lineTo(cmlX, wh);
+                ctx.closePath();
+                ctx.stroke();
+
+                ctx.restore();
+
+                // 5. CENTER WHITE TACTICAL CROSSHAIR (+) AS IN REFERENCE
+                var crossX = w / 2;
+                var crossY = wh;
+                var crossSize = 5;
+
+                ctx.save();
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                // Horizontal bar
+                ctx.moveTo(crossX - crossSize, crossY);
+                ctx.lineTo(crossX + crossSize, crossY);
+                // Vertical bar
+                ctx.moveTo(crossX, crossY - crossSize);
+                ctx.lineTo(crossX, crossY + crossSize);
+                ctx.stroke();
+
+                ctx.restore();
             }
-            ctx.stroke();
-
-            ctx.beginPath();
-            for (var hgx = cmlX; hgx <= cmrX; hgx += 16) {
-                ctx.moveTo(hgx, 0);
-                ctx.lineTo(hgx, h);
-            }
-            ctx.stroke();
-
-            ctx.restore();
-
-            // 3. WINGS RED BORDER OUTLINES
-            ctx.save();
-            ctx.strokeStyle = root.strokeColor;
-            ctx.lineWidth = root.strokeWidth;
-            ctx.lineJoin = "miter";
-            ctx.miterLimit = 4;
-
-            // Left wing bottom outline
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(lc, wh);
-            ctx.lineTo(cmlX, wh);
-            ctx.stroke();
-
-            // Right wing bottom outline
-            ctx.beginPath();
-            ctx.moveTo(cmrX, wh);
-            ctx.lineTo(w - rc, wh);
-            ctx.lineTo(w, 0);
-            ctx.stroke();
-
-            // Top screen baseline for left & right wings
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(ctlX, 0);
-            ctx.moveTo(ctrX, 0);
-            ctx.lineTo(w, 0);
-            ctx.stroke();
-
-            // Wing hazard notches
-            ctx.strokeStyle = root.accentColor;
-            ctx.lineWidth = 2;
-
-            // Left wing start notch
-            ctx.beginPath();
-            ctx.moveTo(lc + 4, wh - 3);
-            ctx.lineTo(lc + 14, wh - 3);
-            ctx.stroke();
-
-            // Right wing end notch
-            ctx.beginPath();
-            ctx.moveTo(w - rc - 14, wh - 3);
-            ctx.lineTo(w - rc - 4, wh - 3);
-            ctx.stroke();
-
-            ctx.restore();
-
-            // 4. CENTER HEXAGON WHITE BORDER OUTLINE
-            ctx.save();
-            ctx.strokeStyle = root.hexBorderColor;
-            ctx.lineWidth = root.strokeWidth;
-            ctx.lineJoin = "miter";
-            ctx.miterLimit = 4;
-
-            ctx.beginPath();
-            ctx.moveTo(ctlX, 0);
-            ctx.lineTo(ctrX, 0);
-            ctx.lineTo(cmrX, wh);
-            ctx.lineTo(cbrX, cby);
-            ctx.lineTo(cblX, cby);
-            ctx.lineTo(cmlX, wh);
-            ctx.closePath();
-            ctx.stroke();
-
-            ctx.restore();
-
-            // 5. CENTER WHITE TACTICAL CROSSHAIR (+) AS IN REFERENCE
-            var crossX = w / 2;
-            var crossY = wh;
-            var crossSize = 5;
-
-            ctx.save();
-            ctx.strokeStyle = "#ffffff";
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            // Horizontal bar
-            ctx.moveTo(crossX - crossSize, crossY);
-            ctx.lineTo(crossX + crossSize, crossY);
-            // Vertical bar
-            ctx.moveTo(crossX, crossY - crossSize);
-            ctx.lineTo(crossX, crossY + crossSize);
-            ctx.stroke();
-
-            ctx.restore();
         }
 
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
     }
 
+    onSectionChanged: bgCanvas.requestPaint()
     onFillColorChanged: bgCanvas.requestPaint()
     onHexFillColorChanged: bgCanvas.requestPaint()
     onHexBorderColorChanged: bgCanvas.requestPaint()

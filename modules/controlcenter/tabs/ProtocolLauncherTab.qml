@@ -67,52 +67,12 @@ Item {
     }
 
     function updateFilteredApps() {
-        var query = root.filterQuery.trim().toLowerCase();
-        var cat = root.selectedCategory.toUpperCase();
-        var list = [];
         var activeCount = 0;
-
         for (var i = 0; i < root.allApps.length; i++) {
-            var app = root.allApps[i];
-            if (app.isRunning) activeCount++;
-
-            // Category match
-            var catMatch = (cat === "ALL");
-            if (!catMatch) {
-                if (cat === "EVA SUITE" || cat === "EVA") {
-                    if (app.name.toUpperCase().indexOf("EVA") !== -1 ||
-                        app.id.toUpperCase().indexOf("EVA") !== -1 ||
-                        (app.categories && (app.categories.toUpperCase().indexOf("EVA") !== -1 || app.categories.toUpperCase().indexOf("X-EVA") !== -1)) ||
-                        (app.keywords && app.keywords.toUpperCase().indexOf("EVA") !== -1)) {
-                        catMatch = true;
-                    }
-                } else if (app.categories) {
-                    var appCats = app.categories.toUpperCase();
-                    if (cat === "SYSTEM" && (appCats.indexOf("SYSTEM") !== -1 || appCats.indexOf("SETTINGS") !== -1 || appCats.indexOf("MONITOR") !== -1 || appCats.indexOf("TERMINAL") !== -1)) catMatch = true;
-                    else if (cat === "NETWORK" && (appCats.indexOf("NETWORK") !== -1 || appCats.indexOf("WEBBROWSER") !== -1 || appCats.indexOf("FILETRANSFER") !== -1)) catMatch = true;
-                    else if (cat === "DEV" && (appCats.indexOf("DEVELOPMENT") !== -1 || appCats.indexOf("BUILDING") !== -1 || appCats.indexOf("IDE") !== -1 || appCats.indexOf("TEXTEDITOR") !== -1)) catMatch = true;
-                    else if (cat === "UTILITY" && (appCats.indexOf("UTILITY") !== -1 || appCats.indexOf("FILETOOLS") !== -1 || appCats.indexOf("FILEMANAGER") !== -1)) catMatch = true;
-                    else if (cat === "MEDIA" && (appCats.indexOf("AUDIO") !== -1 || appCats.indexOf("VIDEO") !== -1 || appCats.indexOf("GRAPHICS") !== -1 || appCats.indexOf("VIEWER") !== -1)) catMatch = true;
-                }
-            }
-
-            if (!catMatch) continue;
-
-            // Search query match
-            if (query) {
-                var nameMatch = app.name.toLowerCase().indexOf(query) !== -1;
-                var execMatch = app.exec.toLowerCase().indexOf(query) !== -1;
-                var commentMatch = app.comment && app.comment.toLowerCase().indexOf(query) !== -1;
-                var genMatch = app.genericName && app.genericName.toLowerCase().indexOf(query) !== -1;
-                var keyMatch = app.keywords && app.keywords.toLowerCase().indexOf(query) !== -1;
-                var catStrMatch = app.categories && app.categories.toLowerCase().indexOf(query) !== -1;
-                if (!nameMatch && !execMatch && !commentMatch && !genMatch && !keyMatch && !catStrMatch) continue;
-            }
-
-            list.push(app);
+            if (root.allApps[i].isRunning) activeCount++;
         }
-
         root.runningCount = activeCount;
+        var list = NervAppSearch.search(root.filterQuery, root.allApps, root.selectedCategory);
         root.filteredApps = list;
 
         // Auto-select first app if none selected or current selection no longer present
@@ -133,8 +93,16 @@ Item {
         }
     }
 
+    Connections {
+        target: NervAppSearch
+        function onFrequenciesChanged() {
+            root.updateFilteredApps();
+        }
+    }
+
     function launchApp(app) {
         if (!app || !app.exec) return;
+        NervAppSearch.incrementFrequency(app.id);
         Quickshell.execDetached(["bash", "-c", app.exec + " &"]);
         refreshTimer.restart();
     }

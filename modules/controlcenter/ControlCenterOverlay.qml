@@ -35,7 +35,7 @@ PanelWindow {
     // ============================================================
     // TACTICAL ROTARY WHEEL STATE & FUNCTIONS
     // ============================================================
-    property bool isWheelCollapsed: false
+    property bool isWheelCollapsed: true
     property real wheelStepCount: currentTabIndex
     property real animatedStep: wheelStepCount
     Behavior on animatedStep {
@@ -104,6 +104,18 @@ PanelWindow {
 
     readonly property real hudWidth: 1220
     readonly property real hudHeight: 700
+    readonly property real chamfer: 32
+
+    function isPointInCutCorner(px, py) {
+        var c = root.chamfer;
+        var w = root.hudWidth;
+        var h = root.hudHeight;
+        if (px + py < c) return true;
+        if ((w - px) + py < c) return true;
+        if (px + (h - py) < c) return true;
+        if ((w - px) + (h - py) < c) return true;
+        return false;
+    }
 
     color: "transparent"
 
@@ -160,6 +172,7 @@ PanelWindow {
             root.reticleDeploy = 0.0;
             root.hudDeploy = 0.0;
             root.isClosing = false;
+            root.isWheelCollapsed = true;
         }
     }
 
@@ -352,16 +365,147 @@ PanelWindow {
                 anchors.horizontalCenter: parent.horizontalCenter
                 focus: true
                 radius: 0
-                color: root.bg
-                border.width: 1
-                border.color: Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.65)
-                clip: true
+                color: "transparent"
+                border.width: 0
+                clip: false
 
-                // Shield clicks inside HUD from propagating to backdropScrim
+                // Shield clicks inside HUD from propagating to backdropScrim (cut corners pass through)
                 MouseArea {
                     anchors.fill: parent
                     z: -10
-                    onClicked: {}
+                    onPressed: function(mouse) {
+                        if (root.isPointInCutCorner(mouse.x, mouse.y)) {
+                            mouse.accepted = false;
+                        }
+                    }
+                    onClicked: function(mouse) {
+                        if (!root.isPointInCutCorner(mouse.x, mouse.y)) {
+                            mouse.accepted = true;
+                        } else {
+                            mouse.accepted = false;
+                        }
+                    }
+                }
+
+                // ============================================================
+                // TACTICAL CHAMFERED OCTAGONAL HUD BASE (45° CUT CORNERS)
+                // ============================================================
+                Canvas {
+                    id: hudBackgroundCanvas
+                    anchors.fill: parent
+                    renderTarget: Canvas.Image
+                    renderStrategy: Canvas.Immediate
+                    z: -2
+
+                    onPaint: {
+                        var ctx = getContext("2d");
+                        ctx.clearRect(0, 0, width, height);
+                        var w = width;
+                        var h = height;
+                        var c = root.chamfer;
+                        var b = 14;
+
+                        // 1. Octagonal Background Fill
+                        ctx.beginPath();
+                        ctx.moveTo(c, 0);
+                        ctx.lineTo(w - c, 0);
+                        ctx.lineTo(w, c);
+                        ctx.lineTo(w, h - c);
+                        ctx.lineTo(w - c, h);
+                        ctx.lineTo(c, h);
+                        ctx.lineTo(0, h - c);
+                        ctx.lineTo(0, c);
+                        ctx.closePath();
+                        ctx.fillStyle = root.bg;
+                        ctx.fill();
+
+                        // 2. Corner Transition Facets (Subtle tactical corner shading)
+                        ctx.fillStyle = Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.05);
+
+                        // TL Corner Facet
+                        ctx.beginPath();
+                        ctx.moveTo(c, 0);
+                        ctx.lineTo(0, c);
+                        ctx.lineTo(b, c);
+                        ctx.lineTo(c, b);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        // TR Corner Facet
+                        ctx.beginPath();
+                        ctx.moveTo(w - c, 0);
+                        ctx.lineTo(w, c);
+                        ctx.lineTo(w - b, c);
+                        ctx.lineTo(w - c, b);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        // BL Corner Facet
+                        ctx.beginPath();
+                        ctx.moveTo(0, h - c);
+                        ctx.lineTo(c, h);
+                        ctx.lineTo(c, h - b);
+                        ctx.lineTo(b, h - c);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        // BR Corner Facet
+                        ctx.beginPath();
+                        ctx.moveTo(w, h - c);
+                        ctx.lineTo(w - c, h);
+                        ctx.lineTo(w - c, h - b);
+                        ctx.lineTo(w - b, h - c);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        // 3. Inner 45° Corner Dividers
+                        ctx.strokeStyle = Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.45);
+                        ctx.lineWidth = 1.0;
+                        ctx.beginPath();
+                        ctx.moveTo(b, c); ctx.lineTo(c, b);
+                        ctx.moveTo(w - b, c); ctx.lineTo(w - c, b);
+                        ctx.moveTo(b, h - c); ctx.lineTo(c, h - b);
+                        ctx.moveTo(w - b, h - c); ctx.lineTo(w - c, h - b);
+                        ctx.stroke();
+
+                        // 4. Corner Hatch Accent Lines (Tactical corner ticks)
+                        ctx.strokeStyle = Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.25);
+                        ctx.lineWidth = 0.8;
+                        ctx.beginPath();
+                        ctx.moveTo((c + b) / 2, b / 2); ctx.lineTo(b / 2, (c + b) / 2);
+                        ctx.moveTo(w - (c + b) / 2, b / 2); ctx.lineTo(w - b / 2, (c + b) / 2);
+                        ctx.moveTo(b / 2, h - (c + b) / 2); ctx.lineTo((c + b) / 2, h - b / 2);
+                        ctx.moveTo(w - b / 2, h - (c + b) / 2); ctx.lineTo(w - (c + b) / 2, h - b / 2);
+                        ctx.stroke();
+
+                        // 5. Full Octagonal Perimeter Stroke (1px primary border)
+                        ctx.beginPath();
+                        ctx.moveTo(c, 0.5);
+                        ctx.lineTo(w - c, 0.5);
+                        ctx.lineTo(w - 0.5, c);
+                        ctx.lineTo(w - 0.5, h - c);
+                        ctx.lineTo(w - c, h - 0.5);
+                        ctx.lineTo(c, h - 0.5);
+                        ctx.lineTo(0.5, h - c);
+                        ctx.lineTo(0.5, c);
+                        ctx.closePath();
+                        ctx.strokeStyle = Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.65);
+                        ctx.lineWidth = 1.0;
+                        ctx.stroke();
+
+                        // 6. Highlighted 45° Corner Chamfer Facets (1.5px crimson edge)
+                        ctx.strokeStyle = root.primary;
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(c, 0); ctx.lineTo(0, c);
+                        ctx.moveTo(w - c, 0); ctx.lineTo(w, c);
+                        ctx.moveTo(w, h - c); ctx.lineTo(w - c, h);
+                        ctx.moveTo(c, h); ctx.lineTo(0, h - c);
+                        ctx.stroke();
+                    }
+
+                    onWidthChanged: requestPaint()
+                    onHeightChanged: requestPaint()
                 }
 
             // Directional 1px Overhead Specular Highlight Rim
@@ -369,8 +513,8 @@ PanelWindow {
                 anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.leftMargin: 14
-                anchors.rightMargin: 14
+                anchors.leftMargin: root.chamfer
+                anchors.rightMargin: root.chamfer
                 height: 1
                 color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
                 z: 97
@@ -378,6 +522,10 @@ PanelWindow {
 
             // Keyboard handling: Keys 1 to 8 switch tabs, Arrow Up/Down cycles, C toggles wheel collapse, Escape closes overlay
             Keys.onPressed: function(event) {
+                if (root.currentTabIndex === 0 && dashboardTab.handleKey(event)) {
+                    event.accepted = true;
+                    return;
+                }
                 if (event.key >= Qt.Key_1 && event.key <= Qt.Key_8) {
                     var targetIdx = event.key - Qt.Key_1;
                     if (targetIdx >= 0 && targetIdx < root.tabs.length) {
@@ -408,6 +556,10 @@ PanelWindow {
         Rectangle {
             id: crtStrike
             anchors.fill: parent
+            anchors.leftMargin: root.chamfer
+            anchors.rightMargin: root.chamfer
+            anchors.topMargin: root.chamfer
+            anchors.bottomMargin: root.chamfer
             z: 98
             visible: root.phosphorFlash > 0.005
             opacity: root.phosphorFlash * 0.30
@@ -426,6 +578,8 @@ PanelWindow {
             id: strikeRasterLine
             anchors.left: parent.left
             anchors.right: parent.right
+            anchors.leftMargin: root.chamfer
+            anchors.rightMargin: root.chamfer
             height: 3
             y: Math.round((1.0 - root.phosphorFlash) * parent.height)
             color: "#ffffff"
@@ -437,17 +591,20 @@ PanelWindow {
         // Honeycomb HUD Grid
         NervHudGrid {
             anchors.fill: parent
-            anchors.topMargin: 14
-            anchors.bottomMargin: 14
+            anchors.topMargin: root.chamfer
+            anchors.bottomMargin: root.chamfer
+            anchors.leftMargin: 14
+            anchors.rightMargin: 14
         }
 
         // Left side faint ambient glow
         Rectangle {
             anchors.left: parent.left
+            anchors.leftMargin: 14
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            anchors.topMargin: 14
-            anchors.bottomMargin: 14
+            anchors.topMargin: root.chamfer
+            anchors.bottomMargin: root.chamfer
             width: 160
             gradient: Gradient {
                 orientation: Gradient.Horizontal
@@ -460,10 +617,11 @@ PanelWindow {
         // Right side faint ambient glow
         Rectangle {
             anchors.right: parent.right
+            anchors.rightMargin: 14
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            anchors.topMargin: 14
-            anchors.bottomMargin: 14
+            anchors.topMargin: root.chamfer
+            anchors.bottomMargin: root.chamfer
             width: 140
             gradient: Gradient {
                 orientation: Gradient.Horizontal
@@ -478,6 +636,8 @@ PanelWindow {
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
+            anchors.leftMargin: root.chamfer
+            anchors.rightMargin: root.chamfer
             height: 14
             stripeColor: root.primary
             bgColor: root.bg
@@ -488,6 +648,8 @@ PanelWindow {
             anchors.bottom: parent.bottom
             anchors.left: parent.left
             anchors.right: parent.right
+            anchors.leftMargin: root.chamfer
+            anchors.rightMargin: root.chamfer
             height: 14
             stripeColor: root.primary
             bgColor: root.bg
@@ -499,8 +661,8 @@ PanelWindow {
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            anchors.topMargin: 14
-            anchors.bottomMargin: 14
+            anchors.topMargin: root.chamfer
+            anchors.bottomMargin: root.chamfer
             width: 14
             primaryColor: root.primary
             secondaryColor: root.secondary
@@ -512,8 +674,8 @@ PanelWindow {
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            anchors.topMargin: 14
-            anchors.bottomMargin: 14
+            anchors.topMargin: root.chamfer
+            anchors.bottomMargin: root.chamfer
             width: 14
             primaryColor: root.primary
             secondaryColor: root.secondary
@@ -735,6 +897,7 @@ PanelWindow {
                     z: isSelected ? 25 : Math.round(20 - Math.abs(diff) * 3)
 
                     Rectangle {
+                        id: nodeRect
                         anchors.fill: parent
                         radius: 4
                         color: tabNode.isSelected ? root.primary : (nodeMouse.containsMouse ? Qt.rgba(root.primary.r, root.primary.g, root.primary.b, 0.15) : Qt.rgba(1.0, 1.0, 1.0, 0.95))
@@ -753,8 +916,8 @@ PanelWindow {
                         property real targetX: 0
                         property real targetY: 0
                         transform: Translate {
-                            x: parent.targetX
-                            y: parent.targetY
+                            x: nodeRect.targetX
+                            y: nodeRect.targetY
                             Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
                             Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
                         }
@@ -797,12 +960,12 @@ PanelWindow {
                             cursorShape: Qt.PointingHandCursor
 
                             onPositionChanged: (m) => {
-                                parent.targetX = Math.max(-4, Math.min(4, (m.x - width / 2) * 0.22));
-                                parent.targetY = Math.max(-4, Math.min(4, (m.y - height / 2) * 0.22));
+                                nodeRect.targetX = Math.max(-4, Math.min(4, (m.x - width / 2) * 0.22));
+                                nodeRect.targetY = Math.max(-4, Math.min(4, (m.y - height / 2) * 0.22));
                             }
                             onExited: {
-                                parent.targetX = 0;
-                                parent.targetY = 0;
+                                nodeRect.targetX = 0;
+                                nodeRect.targetY = 0;
                             }
 
                             onClicked: {
@@ -1192,6 +1355,7 @@ PanelWindow {
                 }
 
                 DashboardTab {
+                    id: dashboardTab
                     opacity: (root.visible && root.currentTabIndex === 0) ? 1.0 : 0.0
                     visible: opacity > 0.01
                     Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
@@ -1247,8 +1411,10 @@ PanelWindow {
         NervScanlines {
             z: 99
             anchors.fill: parent
-            anchors.topMargin: 14
-            anchors.bottomMargin: 14
+            anchors.leftMargin: 14
+            anchors.rightMargin: 14
+            anchors.topMargin: root.chamfer
+            anchors.bottomMargin: root.chamfer
             sweepDuration: 4000
             glowIntensity: 1.0
         }
@@ -1256,7 +1422,7 @@ PanelWindow {
 } // end revealMask
 
     // ============================================================
-    // TACTICAL RETICLE CORNER LOCKING FRAME (⌜ ⌝ ⌞ ⌟)
+    // TACTICAL RETICLE CORNER LOCKING FRAME (45° CHAMFER LOCKS)
     // ============================================================
     Item {
         id: tacticalReticleFrame
@@ -1268,107 +1434,140 @@ PanelWindow {
         visible: (root.reticleDeploy > 0.01 || root.revealProgress > 0.01) && root.visible
         opacity: Math.min(1.0, root.reticleDeploy * 1.8)
 
-        // Top-Left Reticle ⌜
+        // Top-Left Reticle ◤
         Item {
             id: reticleTL
-            x: Math.round((1.0 - root.reticleDeploy) * 16)
-            y: Math.round((1.0 - root.reticleDeploy) * 16)
-            width: 80
-            height: 32
+            x: Math.round((1.0 - root.reticleDeploy) * -16)
+            y: Math.round((1.0 - root.reticleDeploy) * -16)
+            width: root.chamfer + 20
+            height: root.chamfer + 20
 
-            Rectangle { anchors.top: parent.top; anchors.left: parent.left; width: 24; height: 2; color: root.primary }
-            Rectangle { anchors.top: parent.top; anchors.left: parent.left; width: 2; height: 24; color: root.primary }
-            Rectangle { anchors.top: parent.top; anchors.left: parent.left; width: 4; height: 4; color: "#ff2222" }
+            Canvas {
+                id: reticleCanvasTL
+                anchors.fill: parent
+                renderTarget: Canvas.Image
+                renderStrategy: Canvas.Immediate
 
-            Text {
-                anchors.left: parent.left
-                anchors.leftMargin: 8
-                anchors.top: parent.top
-                anchors.topMargin: 4
-                text: "LOC // NERV-01"
-                color: root.primary
-                font.family: root.fontFamily
-                font.pixelSize: 7
-                font.bold: true
-                font.letterSpacing: 0.5
+                onPaint: {
+                    var ctx = getContext("2d");
+                    ctx.clearRect(0, 0, width, height);
+                    var c = root.chamfer;
+                    ctx.strokeStyle = root.primary;
+                    ctx.lineWidth = 2.0;
+                    ctx.beginPath();
+                    ctx.moveTo(0, c + 14);
+                    ctx.lineTo(0, c);
+                    ctx.lineTo(c, 0);
+                    ctx.lineTo(c + 14, 0);
+                    ctx.stroke();
+
+                    // Center facet indicator marker
+                    ctx.fillStyle = "#ff2222";
+                    ctx.fillRect(Math.round(c / 2) - 2, Math.round(c / 2) - 2, 4, 4);
+                }
             }
         }
 
-        // Top-Right Reticle ⌝
+        // Top-Right Reticle ◥
         Item {
             id: reticleTR
-            x: parent.width - width - Math.round((1.0 - root.reticleDeploy) * 16)
-            y: Math.round((1.0 - root.reticleDeploy) * 16)
-            width: 80
-            height: 32
+            x: parent.width - width + Math.round((1.0 - root.reticleDeploy) * 16)
+            y: Math.round((1.0 - root.reticleDeploy) * -16)
+            width: root.chamfer + 20
+            height: root.chamfer + 20
 
-            Rectangle { anchors.top: parent.top; anchors.right: parent.right; width: 24; height: 2; color: root.primary }
-            Rectangle { anchors.top: parent.top; anchors.right: parent.right; width: 2; height: 24; color: root.primary }
-            Rectangle { anchors.top: parent.top; anchors.right: parent.right; width: 4; height: 4; color: "#ff2222" }
+            Canvas {
+                id: reticleCanvasTR
+                anchors.fill: parent
+                renderTarget: Canvas.Image
+                renderStrategy: Canvas.Immediate
 
-            Text {
-                anchors.right: parent.right
-                anchors.rightMargin: 8
-                anchors.top: parent.top
-                anchors.topMargin: 4
-                text: "SYS // NOMINAL"
-                color: root.primary
-                font.family: root.fontFamily
-                font.pixelSize: 7
-                font.bold: true
-                font.letterSpacing: 0.5
+                onPaint: {
+                    var ctx = getContext("2d");
+                    ctx.clearRect(0, 0, width, height);
+                    var c = root.chamfer;
+                    var w = width;
+                    ctx.strokeStyle = root.primary;
+                    ctx.lineWidth = 2.0;
+                    ctx.beginPath();
+                    ctx.moveTo(w - c - 14, 0);
+                    ctx.lineTo(w - c, 0);
+                    ctx.lineTo(w, c);
+                    ctx.lineTo(w, c + 14);
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#ff2222";
+                    ctx.fillRect(Math.round(w - c / 2) - 2, Math.round(c / 2) - 2, 4, 4);
+                }
             }
         }
 
-        // Bottom-Left Reticle ⌞
+        // Bottom-Left Reticle ◣
         Item {
             id: reticleBL
-            x: Math.round((1.0 - root.reticleDeploy) * 16)
-            y: parent.height - height - Math.round((1.0 - root.reticleDeploy) * 16)
-            width: 80
-            height: 32
+            x: Math.round((1.0 - root.reticleDeploy) * -16)
+            y: parent.height - height + Math.round((1.0 - root.reticleDeploy) * 16)
+            width: root.chamfer + 20
+            height: root.chamfer + 20
 
-            Rectangle { anchors.bottom: parent.bottom; anchors.left: parent.left; width: 24; height: 2; color: root.primary }
-            Rectangle { anchors.bottom: parent.bottom; anchors.left: parent.left; width: 2; height: 24; color: root.primary }
-            Rectangle { anchors.bottom: parent.bottom; anchors.left: parent.left; width: 4; height: 4; color: "#ff2222" }
+            Canvas {
+                id: reticleCanvasBL
+                anchors.fill: parent
+                renderTarget: Canvas.Image
+                renderStrategy: Canvas.Immediate
 
-            Text {
-                anchors.left: parent.left
-                anchors.leftMargin: 8
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: 4
-                text: "MAGI // 01-MEL"
-                color: root.primary
-                font.family: root.fontFamily
-                font.pixelSize: 7
-                font.bold: true
-                font.letterSpacing: 0.5
+                onPaint: {
+                    var ctx = getContext("2d");
+                    ctx.clearRect(0, 0, width, height);
+                    var c = root.chamfer;
+                    var h = height;
+                    ctx.strokeStyle = root.primary;
+                    ctx.lineWidth = 2.0;
+                    ctx.beginPath();
+                    ctx.moveTo(0, h - c - 14);
+                    ctx.lineTo(0, h - c);
+                    ctx.lineTo(c, h);
+                    ctx.lineTo(c + 14, h);
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#ff2222";
+                    ctx.fillRect(Math.round(c / 2) - 2, Math.round(h - c / 2) - 2, 4, 4);
+                }
             }
         }
 
-        // Bottom-Right Reticle ⌟
+        // Bottom-Right Reticle ◢
         Item {
             id: reticleBR
-            x: parent.width - width - Math.round((1.0 - root.reticleDeploy) * 16)
-            y: parent.height - height - Math.round((1.0 - root.reticleDeploy) * 16)
-            width: 80
-            height: 32
+            x: parent.width - width + Math.round((1.0 - root.reticleDeploy) * 16)
+            y: parent.height - height + Math.round((1.0 - root.reticleDeploy) * 16)
+            width: root.chamfer + 20
+            height: root.chamfer + 20
 
-            Rectangle { anchors.bottom: parent.bottom; anchors.right: parent.right; width: 24; height: 2; color: root.primary }
-            Rectangle { anchors.bottom: parent.bottom; anchors.right: parent.right; width: 2; height: 24; color: root.primary }
-            Rectangle { anchors.bottom: parent.bottom; anchors.right: parent.right; width: 4; height: 4; color: "#ff2222" }
+            Canvas {
+                id: reticleCanvasBR
+                anchors.fill: parent
+                renderTarget: Canvas.Image
+                renderStrategy: Canvas.Immediate
 
-            Text {
-                anchors.right: parent.right
-                anchors.rightMargin: 8
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: 4
-                text: "SYNC // 100%"
-                color: root.primary
-                font.family: root.fontFamily
-                font.pixelSize: 7
-                font.bold: true
-                font.letterSpacing: 0.5
+                onPaint: {
+                    var ctx = getContext("2d");
+                    ctx.clearRect(0, 0, width, height);
+                    var c = root.chamfer;
+                    var w = width;
+                    var h = height;
+                    ctx.strokeStyle = root.primary;
+                    ctx.lineWidth = 2.0;
+                    ctx.beginPath();
+                    ctx.moveTo(w, h - c - 14);
+                    ctx.lineTo(w, h - c);
+                    ctx.lineTo(w - c, h);
+                    ctx.lineTo(w - c - 14, h);
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#ff2222";
+                    ctx.fillRect(Math.round(w - c / 2) - 2, Math.round(h - c / 2) - 2, 4, 4);
+                }
             }
         }
     }
@@ -1444,7 +1643,7 @@ PanelWindow {
         // 5. Tactical Left & Right HUD Reticle Brackets
         RowLayout {
             anchors.left: parent.left
-            anchors.leftMargin: 8
+            anchors.leftMargin: root.chamfer + 6
             anchors.bottom: laserCore.top
             anchors.bottomMargin: 3
             spacing: 4
@@ -1467,7 +1666,7 @@ PanelWindow {
 
         RowLayout {
             anchors.right: parent.right
-            anchors.rightMargin: 8
+            anchors.rightMargin: root.chamfer + 6
             anchors.bottom: laserCore.top
             anchors.bottomMargin: 3
             spacing: 4

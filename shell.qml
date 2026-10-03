@@ -320,6 +320,11 @@ ShellRoot {
         function close() {
             nervLauncher.close();
         }
+
+        function search(query: string) {
+            nervLauncher.open();
+            nervLauncher.setSearchQuery(query);
+        }
     }
 
     IpcHandler {

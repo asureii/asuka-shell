@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <unordered_set>
 #include <unordered_map>
+#include <cctype>
 #include <unistd.h>
 #include <glob.h>
 #include <iomanip>
@@ -58,25 +59,147 @@ static std::string escapeJson(const std::string& str) {
     return o.str();
 }
 
+static std::string getBaseName(const std::string& path) {
+    if (path.empty()) return "";
+    size_t slash = path.find_last_of('/');
+    if (slash != std::string::npos) {
+        return path.substr(slash + 1);
+    }
+    return path;
+}
+
+static std::vector<std::string> tokenizeCommand(const std::string& cmd) {
+    std::vector<std::string> tokens;
+    std::string current;
+    bool inSingle = false;
+    bool inDouble = false;
+    bool escaped = false;
+
+    for (char c : cmd) {
+        if (escaped) {
+            current += c;
+            escaped = false;
+        } else if (c == '\\') {
+            escaped = true;
+        } else if (c == '\'' && !inDouble) {
+            inSingle = !inSingle;
+        } else if (c == '"' && !inSingle) {
+            inDouble = !inDouble;
+        } else if (std::isspace(static_cast<unsigned char>(c)) && !inSingle && !inDouble) {
+            if (!current.empty()) {
+                tokens.push_back(current);
+                current.clear();
+            }
+        } else {
+            current += c;
+        }
+    }
+    if (!current.empty()) {
+        tokens.push_back(current);
+    }
+    return tokens;
+}
+
 static std::string extractBinaryName(const std::string& execCmd) {
     if (execCmd.empty()) return "";
-    std::istringstream ss(execCmd);
-    std::string firstToken;
-    ss >> firstToken;
-    if (firstToken.empty()) return "";
-    // strip env / wrapper if any
-    if (firstToken == "env" || firstToken == "/usr/bin/env") {
-        while (ss >> firstToken) {
-            if (firstToken.find('=') == std::string::npos && firstToken[0] != '-') {
+    std::vector<std::string> tokens = tokenizeCommand(execCmd);
+    if (tokens.empty()) return "";
+
+    size_t idx = 0;
+
+    // Strip env and its variable assignments or options
+    while (idx < tokens.size()) {
+        std::string base = getBaseName(tokens[idx]);
+        if (base == "env") {
+            idx++;
+            while (idx < tokens.size() && (tokens[idx].find('=') != std::string::npos || (!tokens[idx].empty() && tokens[idx][0] == '-'))) {
+                idx++;
+            }
+        } else {
+            break;
+        }
+    }
+
+    if (idx >= tokens.size()) return "";
+
+    std::string base = getBaseName(tokens[idx]);
+
+    // Check for terminal emulator wrappers
+    static const std::unordered_set<std::string> termWrappers = {
+        "evaterm", "kitty", "alacritty", "foot", "wezterm", "ghostty",
+        "xterm", "uxterm", "konsole", "gnome-terminal", "xfce4-terminal",
+        "terminator", "urxvt", "rxvt", "st", "termite", "tilix", "contour"
+    };
+
+    if (termWrappers.count(base)) {
+        size_t nextIdx = tokens.size();
+        for (size_t j = idx + 1; j < tokens.size(); ++j) {
+            if (tokens[j] == "-e" || tokens[j] == "-x" || tokens[j] == "-c" ||
+                tokens[j] == "--execute" || tokens[j] == "--command" || tokens[j] == "--") {
+                if (j + 1 < tokens.size()) {
+                    nextIdx = j + 1;
+                    break;
+                }
+            }
+        }
+        if (nextIdx == tokens.size()) {
+            for (size_t j = idx + 1; j < tokens.size(); ++j) {
+                if (!tokens[j].empty() && tokens[j][0] != '-') {
+                    nextIdx = j;
+                    break;
+                }
+            }
+        }
+        if (nextIdx < tokens.size()) {
+            idx = nextIdx;
+            base = getBaseName(tokens[idx]);
+        }
+    }
+
+    // Check for shell runner wrappers (sh, bash, zsh, dash)
+    if (base == "sh" || base == "bash" || base == "zsh" || base == "dash") {
+        for (size_t j = idx + 1; j < tokens.size(); ++j) {
+            if (tokens[j] == "-c" && j + 1 < tokens.size()) {
+                std::vector<std::string> subTokens = tokenizeCommand(tokens[j + 1]);
+                size_t subIdx = 0;
+                while (subIdx < subTokens.size() && (subTokens[subIdx] == "exec" || subTokens[subIdx].find('=') != std::string::npos)) {
+                    subIdx++;
+                }
+                if (subIdx < subTokens.size()) {
+                    base = getBaseName(subTokens[subIdx]);
+                }
                 break;
             }
         }
     }
-    size_t slash = firstToken.find_last_of('/');
-    if (slash != std::string::npos) {
-        return firstToken.substr(slash + 1);
+
+    // Check for interpreter wrappers (python, python3, node, ruby, perl)
+    static const std::unordered_set<std::string> interpreterWrappers = {
+        "python", "python3", "python3.10", "python3.11", "python3.12", "python3.13",
+        "node", "nodejs", "ruby", "perl"
+    };
+
+    if (interpreterWrappers.count(base)) {
+        for (size_t j = idx + 1; j < tokens.size(); ++j) {
+            if (tokens[j] == "-m" && j + 1 < tokens.size()) {
+                base = tokens[j + 1];
+                break;
+            }
+            if (!tokens[j].empty() && tokens[j][0] != '-') {
+                base = getBaseName(tokens[j]);
+                break;
+            }
+        }
     }
-    return firstToken;
+
+    // Clean common script extensions from binary name if needed
+    if (base.size() > 3 && base.substr(base.size() - 3) == ".py") {
+        base = base.substr(0, base.size() - 3);
+    } else if (base.size() > 3 && base.substr(base.size() - 3) == ".sh") {
+        base = base.substr(0, base.size() - 3);
+    }
+
+    return base;
 }
 
 static std::string resolveIcon(const std::string& iconName) {
@@ -212,6 +335,56 @@ static std::unordered_map<std::string, ProcessInfo> getRunningProcesses() {
                         }
 
                         procs[comm] = pi;
+
+                        // Also inspect /proc/<pid>/cmdline to support interpreters (python, node, etc.)
+                        // and untruncated process names (> 15 chars)
+                        std::ifstream cmdlineStream("/proc/" + pid + "/cmdline", std::ios::binary);
+                        if (cmdlineStream.is_open()) {
+                            std::vector<std::string> cmdArgs;
+                            std::string arg;
+                            while (std::getline(cmdlineStream, arg, '\0')) {
+                                if (!arg.empty()) {
+                                    cmdArgs.push_back(arg);
+                                    if (cmdArgs.size() >= 5) break;
+                                }
+                            }
+                            if (!cmdArgs.empty()) {
+                                std::string arg0Base = getBaseName(cmdArgs[0]);
+                                if (!arg0Base.empty() && !procs.count(arg0Base)) {
+                                    procs[arg0Base] = pi;
+                                }
+
+                                static const std::unordered_set<std::string> interpSet = {
+                                    "python", "python3", "python3.10", "python3.11", "python3.12", "python3.13",
+                                    "node", "nodejs", "ruby", "perl", "sh", "bash", "zsh"
+                                };
+
+                                if (interpSet.count(comm) || interpSet.count(arg0Base)) {
+                                    for (size_t a = 1; a < cmdArgs.size(); ++a) {
+                                        if (cmdArgs[a] == "-m" && a + 1 < cmdArgs.size()) {
+                                            std::string mod = cmdArgs[a + 1];
+                                            if (!mod.empty() && !procs.count(mod)) procs[mod] = pi;
+                                            break;
+                                        }
+                                        if (!cmdArgs[a].empty() && cmdArgs[a][0] != '-') {
+                                            std::string scriptBase = getBaseName(cmdArgs[a]);
+                                            if (!scriptBase.empty()) {
+                                                if (!procs.count(scriptBase)) procs[scriptBase] = pi;
+                                                if (scriptBase.size() > 3 && scriptBase.substr(scriptBase.size() - 3) == ".py") {
+                                                    std::string stem = scriptBase.substr(0, scriptBase.size() - 3);
+                                                    if (!procs.count(stem)) procs[stem] = pi;
+                                                }
+                                                if (scriptBase.size() > 3 && scriptBase.substr(scriptBase.size() - 3) == ".sh") {
+                                                    std::string stem = scriptBase.substr(0, scriptBase.size() - 3);
+                                                    if (!procs.count(stem)) procs[stem] = pi;
+                                                }
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -247,7 +420,7 @@ int main() {
                 std::string line;
                 bool inDesktopEntry = false;
                 bool noDisplay = false;
-                bool isApp = false;
+                bool isApp = true;
 
                 while (std::getline(f, line)) {
                     line = trim(line);
@@ -262,7 +435,7 @@ int main() {
                     if (!inDesktopEntry) continue;
 
                     if (line.compare(0, 5, "Type=") == 0) {
-                        if (line.substr(5) == "Application") isApp = true;
+                        isApp = (line.substr(5) == "Application");
                     }
                     else if (line.compare(0, 5, "Name=") == 0) app.name = line.substr(5);
                     else if (line.compare(0, 12, "GenericName=") == 0) app.genericName = line.substr(12);
@@ -285,7 +458,7 @@ int main() {
                     }
                 }
 
-                if (!noDisplay && !app.name.empty() && !app.exec.empty()) {
+                if (isApp && !noDisplay && !app.name.empty() && !app.exec.empty()) {
                     app.iconPath = resolveIcon(app.icon);
                     
                     // Check if running
